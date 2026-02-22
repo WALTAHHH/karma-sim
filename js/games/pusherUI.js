@@ -1,5 +1,5 @@
-// Karma Pusher UI - Full Featured
-// Canvas rendering, upgrades, events, debug/design tools
+// Karma Pusher UI - 2.5D Arcade Style
+// Canvas rendering with CSS 3D perspective transforms
 
 import { 
     getPusherGame, 
@@ -71,10 +71,17 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
             <div class="pusher-event-banner" id="event-banner"></div>
             
             <div class="pusher-cabinet">
-                <div class="pusher-glass">
-                    <canvas id="pusher-canvas" width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}"></canvas>
-                    <div class="combo-display" id="combo-display"></div>
-                    <div class="debug-overlay" id="debug-overlay"></div>
+                <div class="pusher-3d-scene">
+                    <div class="pusher-back-wall"></div>
+                    <div class="pusher-wall-left"></div>
+                    <div class="pusher-wall-right"></div>
+                    <div class="pusher-glass">
+                        <canvas id="pusher-canvas" width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}"></canvas>
+                        <div class="combo-display" id="combo-display"></div>
+                        <div class="debug-overlay" id="debug-overlay"></div>
+                    </div>
+                    <div class="pusher-win-zone"></div>
+                    <div class="pusher-ledge"></div>
                 </div>
             </div>
             
@@ -664,7 +671,7 @@ function updateDebugOverlay() {
 }
 
 /**
- * Main render function
+ * Main render function - 2.5D style
  * @param {PusherGame} game - Game instance
  */
 function render(game) {
@@ -685,66 +692,67 @@ function render(game) {
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Background gradient
+    // Background - darker at top to simulate depth
     const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    bgGrad.addColorStop(0, '#1a1a2e');
+    bgGrad.addColorStop(0, '#12121f');
+    bgGrad.addColorStop(0.3, '#1a1a2e');
     bgGrad.addColorStop(1, '#0f0f1a');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Platform glow
-    ctx.shadowColor = 'rgba(251, 191, 36, 0.2)';
+    // Platform depth shadow (creates 3D illusion)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
     ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 10;
     
-    // Platform background
+    // Platform surface gradient - metallic feel
     const platGrad = ctx.createLinearGradient(platform.x, platform.y, platform.x, platform.edgeY);
-    platGrad.addColorStop(0, '#252540');
-    platGrad.addColorStop(0.5, '#1e1e35');
-    platGrad.addColorStop(1, '#18182a');
+    platGrad.addColorStop(0, '#3a3a5a');
+    platGrad.addColorStop(0.1, '#2a2a4a');
+    platGrad.addColorStop(0.5, '#222240');
+    platGrad.addColorStop(0.9, '#1a1a35');
+    platGrad.addColorStop(1, '#252550');
     ctx.fillStyle = platGrad;
     ctx.fillRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
     
     ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     
-    // Platform border
-    ctx.strokeStyle = '#3a3a5a';
+    // Platform surface texture (grid lines for depth)
+    ctx.strokeStyle = 'rgba(60, 60, 90, 0.3)';
+    ctx.lineWidth = 1;
+    const gridSpacing = 30;
+    for (let y = platform.y + gridSpacing; y < platform.edgeY; y += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(platform.x, y);
+        ctx.lineTo(platform.x + platform.width, y);
+        ctx.stroke();
+    }
+    
+    // Platform border with metallic shine
+    ctx.strokeStyle = '#4a4a6a';
     ctx.lineWidth = 3;
     ctx.strokeRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
     
-    // Pusher bar
-    const pusherGrad = ctx.createLinearGradient(0, pusherBar.y, 0, pusherBar.y + pusherBar.height);
-    pusherGrad.addColorStop(0, '#888');
-    pusherGrad.addColorStop(0.5, '#666');
-    pusherGrad.addColorStop(1, '#444');
-    ctx.fillStyle = pusherGrad;
+    // Inner highlight
+    ctx.strokeStyle = 'rgba(100, 100, 140, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(platform.x + 2, platform.y + 2, platform.width - 4, platform.edgeY - platform.y - 4);
     
-    const barX = game.pusherX;
-    ctx.beginPath();
-    ctx.roundRect(barX, pusherBar.y, pusherWidth, pusherBar.height, 4);
-    ctx.fill();
+    // Pusher bar with 3D effect
+    drawPusher3D(game.pusherX, pusherBar, pusherWidth, game.activeEvent?.type === 'megaPush');
     
-    // Pusher shine
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillRect(barX + 2, pusherBar.y + 2, pusherWidth - 4, 4);
-    
-    // Mega push indicator
-    if (game.activeEvent?.type === 'megaPush') {
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(barX - 2, pusherBar.y - 2, pusherWidth + 4, pusherBar.height + 4);
-        ctx.setLineDash([]);
-    }
-    
-    // Win zone
-    const winZoneGrad = ctx.createLinearGradient(0, platform.edgeY - 25, 0, platform.edgeY + 20);
-    winZoneGrad.addColorStop(0, 'rgba(74, 222, 128, 0.1)');
-    winZoneGrad.addColorStop(0.5, 'rgba(74, 222, 128, 0.25)');
+    // Win zone gradient at edge
+    const winZoneGrad = ctx.createLinearGradient(0, platform.edgeY - 35, 0, platform.edgeY + 15);
+    winZoneGrad.addColorStop(0, 'rgba(74, 222, 128, 0.05)');
+    winZoneGrad.addColorStop(0.5, 'rgba(74, 222, 128, 0.2)');
     winZoneGrad.addColorStop(1, 'rgba(74, 222, 128, 0.4)');
     ctx.fillStyle = winZoneGrad;
-    ctx.fillRect(platform.x, platform.edgeY - 25, platform.width, 45);
+    ctx.fillRect(platform.x, platform.edgeY - 35, platform.width, 50);
     
-    // Win zone line
+    // Edge line with glow
+    ctx.shadowColor = '#4ade80';
+    ctx.shadowBlur = 8;
     ctx.strokeStyle = '#4ade80';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 4]);
@@ -753,46 +761,44 @@ function render(game) {
     ctx.lineTo(platform.x + platform.width, platform.edgeY);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
     
-    // "WIN" text
-    ctx.fillStyle = 'rgba(74, 222, 128, 0.6)';
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('▼ WIN ▼', platform.x + platform.width / 2, platform.edgeY + 15);
-    
-    // Draw items (back to front for proper layering)
+    // Draw items with depth sorting and 3D effect
     const sortedItems = [...game.items].sort((a, b) => a.y - b.y);
     for (const item of sortedItems) {
-        drawItem(item, platform);
+        drawItem3D(item, platform);
     }
     
-    // Draw drop preview
+    // Drop preview line
     const dropX = platform.x + 15 + dropPosition * (platform.width - 30);
     
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(dropX, 15);
-    ctx.lineTo(dropX, platform.y - 5);
+    ctx.moveTo(dropX, 10);
+    ctx.lineTo(dropX, platform.y - 8);
     ctx.stroke();
     ctx.setLineDash([]);
     
-    // Drop coin preview
-    ctx.font = '22px serif';
+    // Drop coin preview with glow
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 10;
+    ctx.font = '24px serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🪙', dropX, 25);
+    ctx.shadowBlur = 0;
     
     // Event overlays
     if (game.activeEvent?.type === 'goldRush') {
-        ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.08)';
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     }
     
     if (game.activeEvent?.type === 'frenzy') {
-        const pulse = Math.sin(Date.now() / 100) * 0.03;
-        ctx.fillStyle = `rgba(239, 68, 68, ${0.05 + pulse})`;
+        const pulse = Math.sin(Date.now() / 100) * 0.04;
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.06 + pulse})`;
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     }
     
@@ -800,30 +806,101 @@ function render(game) {
 }
 
 /**
- * Draw a single item
+ * Draw pusher bar with 3D effect
+ */
+function drawPusher3D(pusherX, pusherBar, pusherWidth, isMegaPush) {
+    const barY = pusherBar.y;
+    const barHeight = pusherBar.height;
+    
+    // Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    
+    // Main pusher body
+    const pusherGrad = ctx.createLinearGradient(0, barY, 0, barY + barHeight);
+    pusherGrad.addColorStop(0, '#aaa');
+    pusherGrad.addColorStop(0.2, '#888');
+    pusherGrad.addColorStop(0.5, '#666');
+    pusherGrad.addColorStop(0.8, '#555');
+    pusherGrad.addColorStop(1, '#444');
+    ctx.fillStyle = pusherGrad;
+    
+    ctx.beginPath();
+    ctx.roundRect(pusherX, barY, pusherWidth, barHeight, 4);
+    ctx.fill();
+    
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Top shine
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(pusherX + 3, barY + 2, pusherWidth - 6, 3);
+    
+    // Front face (3D depth)
+    const frontGrad = ctx.createLinearGradient(0, barY + barHeight - 4, 0, barY + barHeight + 6);
+    frontGrad.addColorStop(0, '#555');
+    frontGrad.addColorStop(1, '#333');
+    ctx.fillStyle = frontGrad;
+    ctx.fillRect(pusherX + 2, barY + barHeight - 2, pusherWidth - 4, 8);
+    
+    // Mega push glow
+    if (isMegaPush) {
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(pusherX - 2, barY - 2, pusherWidth + 4, barHeight + 12);
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+    }
+}
+
+/**
+ * Draw a single item with 3D depth effect
  * @param {PusherItem} item - Item to draw
  * @param {Object} platform - Platform bounds
  */
-function drawItem(item, platform) {
+function drawItem3D(item, platform) {
     ctx.save();
-    ctx.translate(item.x + item.wobble, item.y);
     
-    // Glow effect
+    // Calculate depth factor based on Y position (further down = "closer")
+    const depthRange = platform.edgeY - platform.y;
+    const depthFactor = (item.y - platform.y) / depthRange;
+    
+    // Scale items slightly larger as they get "closer" (bottom of screen)
+    const scale = 0.9 + depthFactor * 0.2;
+    
+    // Add shadow that grows with depth
+    const shadowOffset = 2 + depthFactor * 4;
+    const shadowBlur = 3 + depthFactor * 6;
+    
+    ctx.translate(item.x + item.wobble, item.y);
+    ctx.scale(scale, scale);
+    
+    // Drop shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = shadowBlur;
+    ctx.shadowOffsetX = shadowOffset * 0.5;
+    ctx.shadowOffsetY = shadowOffset;
+    
+    // Glow effect for special items
     if (item.glow > 0 || item.type !== 'coin') {
         ctx.shadowColor = item.color || '#fbbf24';
-        ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 8;
+        ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 10 + depthFactor * 5;
     }
     
-    // Flash effect
+    // Flash effect on collision
     if (item.flash > 0) {
         ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 15 * item.flash;
+        ctx.shadowBlur = 18 * item.flash;
     }
     
     // Near-edge tension glow
     if (item.y + item.radius > platform.edgeY - 30) {
         ctx.shadowColor = '#4ade80';
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 15;
     }
     
     // Draw icon
