@@ -1,8 +1,8 @@
-// Karma Pusher UI
-// Canvas rendering + interactions
+// Karma Pusher UI - Full Featured
+// Canvas rendering, upgrades, events, maximum juice
 
-import { getPusherGame, PRIZES } from './pusher.js';
-import { spawnParticles, spawnFireworks, screenFlash, playTick, playWinSound, playChime } from './shared.js';
+import { getPusherGame, PRIZES, UPGRADES, SPECIAL_EVENTS } from './pusher.js';
+import { spawnParticles, spawnFireworks, screenFlash, playTick, playWinSound, playChime, sleep } from './shared.js';
 
 let pusherContainer = null;
 let canvas = null;
@@ -12,14 +12,16 @@ let currentKarma = 0;
 let spendFn = null;
 let addFn = null;
 let onCloseFn = null;
-let dropPosition = 0.5; // 0-1
-let lastCollections = [];
-let showCollectionPopup = false;
-let collectionPopupTimer = 0;
+let dropPosition = 0.5;
 
-const DROP_COST = 1; // 1 karma per coin drop
+// Visual state
+let screenShake = 0;
+let notifications = [];
+let showUpgradePanel = false;
+
+const DROP_COST = 1;
 const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 350;
+const CANVAS_HEIGHT = 320;
 
 export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     hidePusherGame();
@@ -29,53 +31,64 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     addFn = addKarmaFn;
     onCloseFn = onClose;
     
+    const game = getPusherGame();
+    
     pusherContainer = document.createElement('div');
     pusherContainer.className = 'pusher-overlay';
     pusherContainer.innerHTML = `
         <div class="pusher-machine">
             <div class="pusher-header">
-                <h2 class="pusher-title">🪙 KARMA PUSHER 🪙</h2>
+                <h2 class="pusher-title">🪙 KARMA PUSHER</h2>
                 <div class="pusher-karma-display">
                     <span class="karma-icon">☯</span>
                     <span class="karma-amount" id="pusher-karma">${karma}</span>
                 </div>
             </div>
             
+            <div class="pusher-event-banner" id="event-banner"></div>
+            
             <div class="pusher-cabinet">
                 <div class="pusher-glass">
                     <canvas id="pusher-canvas" width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}"></canvas>
-                </div>
-                <div class="pusher-drop-zone">
-                    <div class="drop-indicator" id="drop-indicator"></div>
+                    <div class="combo-display" id="combo-display"></div>
                 </div>
             </div>
             
             <div class="pusher-controls">
-                <div class="drop-slider-container">
-                    <input type="range" id="drop-slider" min="0" max="100" value="50" class="drop-slider">
-                    <div class="slider-labels">
-                        <span>◀ LEFT</span>
-                        <span>RIGHT ▶</span>
-                    </div>
+                <div class="drop-position-control">
+                    <input type="range" id="drop-slider" min="5" max="95" value="50" class="drop-slider">
                 </div>
-                <button class="pusher-btn drop-btn" id="btn-drop">
-                    <span class="btn-icon">🪙</span>
-                    <span class="btn-text">DROP</span>
-                    <span class="btn-cost">${DROP_COST}☯</span>
-                </button>
-                <button class="pusher-btn drop-multi-btn" id="btn-drop-5">
-                    <span class="btn-text">×5</span>
-                    <span class="btn-cost">${DROP_COST * 5}☯</span>
-                </button>
+                <div class="drop-buttons">
+                    <button class="pusher-btn drop-btn" id="btn-drop">
+                        <span class="btn-icon">🪙</span>
+                        <span class="btn-text">DROP</span>
+                        <span class="btn-cost">${DROP_COST}☯</span>
+                    </button>
+                    <button class="pusher-btn drop-multi-btn" id="btn-drop-multi">
+                        <span class="btn-text" id="multi-label">×${game.getMultiDropCount()}</span>
+                        <span class="btn-cost" id="multi-cost">${DROP_COST * game.getMultiDropCount()}☯</span>
+                    </button>
+                    <button class="pusher-btn upgrade-btn" id="btn-upgrades">
+                        <span class="btn-icon">⬆️</span>
+                    </button>
+                </div>
             </div>
             
             <div class="pusher-stats" id="pusher-stats"></div>
             
-            <div class="pusher-collection" id="collection-popup"></div>
-            
             <div class="pusher-footer">
                 <button class="pusher-btn-secondary" id="btn-pusher-close">Close</button>
             </div>
+            
+            <div class="upgrade-panel" id="upgrade-panel">
+                <div class="upgrade-panel-header">
+                    <h3>⬆️ UPGRADES</h3>
+                    <button class="upgrade-close" id="upgrade-close">✕</button>
+                </div>
+                <div class="upgrade-list" id="upgrade-list"></div>
+            </div>
+            
+            <div class="notification-container" id="notifications"></div>
         </div>
         <div class="particle-container" id="particles"></div>
     `;
@@ -87,38 +100,43 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     
     bindEvents();
     updateStats();
+    updateUpgradePanel();
     startGameLoop();
 }
 
 function bindEvents() {
-    const slider = document.getElementById('drop-slider');
-    const dropIndicator = document.getElementById('drop-indicator');
+    const game = getPusherGame();
     
-    slider.addEventListener('input', (e) => {
+    document.getElementById('drop-slider').addEventListener('input', (e) => {
         dropPosition = e.target.value / 100;
-        dropIndicator.style.left = `${dropPosition * 100}%`;
     });
     
     document.getElementById('btn-drop').addEventListener('click', () => {
         if (currentKarma >= DROP_COST) {
-            dropCoin();
+            doDrop();
         } else {
             shakeButton('btn-drop');
         }
     });
     
-    document.getElementById('btn-drop-5').addEventListener('click', () => {
-        if (currentKarma >= DROP_COST * 5) {
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => {
-                    if (currentKarma >= DROP_COST) {
-                        dropCoin(dropPosition + (Math.random() - 0.5) * 0.2);
-                    }
-                }, i * 150);
-            }
+    document.getElementById('btn-drop-multi').addEventListener('click', () => {
+        const count = game.getMultiDropCount();
+        const cost = DROP_COST * count;
+        if (currentKarma >= cost) {
+            doMultiDrop(count);
         } else {
-            shakeButton('btn-drop-5');
+            shakeButton('btn-drop-multi');
         }
+    });
+    
+    document.getElementById('btn-upgrades').addEventListener('click', () => {
+        showUpgradePanel = !showUpgradePanel;
+        document.getElementById('upgrade-panel').classList.toggle('show', showUpgradePanel);
+    });
+    
+    document.getElementById('upgrade-close').addEventListener('click', () => {
+        showUpgradePanel = false;
+        document.getElementById('upgrade-panel').classList.remove('show');
     });
     
     document.getElementById('btn-pusher-close').addEventListener('click', () => {
@@ -126,17 +144,15 @@ function bindEvents() {
         if (onCloseFn) onCloseFn();
     });
     
-    // Click on canvas to set drop position
     canvas.addEventListener('click', (e) => {
         const rect = canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
-        dropPosition = Math.max(0.1, Math.min(0.9, x));
+        dropPosition = Math.max(0.05, Math.min(0.95, x));
         document.getElementById('drop-slider').value = dropPosition * 100;
-        document.getElementById('drop-indicator').style.left = `${dropPosition * 100}%`;
     });
 }
 
-function dropCoin(position = dropPosition) {
+function doDrop(position = dropPosition) {
     const game = getPusherGame();
     
     currentKarma -= DROP_COST;
@@ -144,216 +160,339 @@ function dropCoin(position = dropPosition) {
     updateKarmaDisplay();
     
     const item = game.dropCoin(position);
-    playTick(300 + Math.random() * 100);
     
+    // Sound based on what dropped
+    if (item.type === 'coin') {
+        playTick(400 + Math.random() * 100);
+    } else {
+        playChime(500);
+    }
+    
+    // Small screen shake
+    screenShake = 3;
+    
+    updateStats();
+}
+
+function doMultiDrop(count) {
+    const game = getPusherGame();
+    const cost = DROP_COST * count;
+    
+    currentKarma -= cost;
+    spendFn(cost);
+    updateKarmaDisplay();
+    
+    // Staggered drops across the platform
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const spread = 0.3;
+            const pos = dropPosition + (Math.random() - 0.5) * spread;
+            game.dropCoin(Math.max(0.05, Math.min(0.95, pos)));
+            playTick(350 + Math.random() * 150);
+        }, i * 60);
+    }
+    
+    screenShake = 8;
     updateStats();
 }
 
 function startGameLoop() {
     const game = getPusherGame();
+    let lastTime = performance.now();
     
-    function loop() {
+    function loop(currentTime) {
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        
         // Update physics
-        const fallen = game.update();
+        const result = game.update(currentKarma, addFn);
+        
+        // Handle auto-drop
+        if (result.autoDrop && currentKarma >= DROP_COST) {
+            doDrop(Math.random());
+            addNotification('🤖 Auto-drop!', '#4ade80');
+        }
         
         // Handle collected prizes
-        if (fallen.length > 0) {
-            handleCollections(fallen);
+        if (result.fallen && result.fallen.length > 0) {
+            handleCollections(result.fallen);
         }
+        
+        // Update event banner
+        updateEventBanner();
+        
+        // Decay screen shake
+        if (screenShake > 0) screenShake *= 0.9;
+        
+        // Update combo display
+        updateComboDisplay();
         
         // Render
         render(game);
         
-        // Update collection popup
-        updateCollectionPopup();
+        // Update notifications
+        updateNotifications();
         
         animationFrame = requestAnimationFrame(loop);
     }
     
-    loop();
+    animationFrame = requestAnimationFrame(loop);
 }
 
 function handleCollections(items) {
     const game = getPusherGame();
     let totalKarma = 0;
+    let biggestWin = 0;
+    let gotJackpot = false;
     
     for (const item of items) {
-        game.collectPrize(item);
+        const result = game.collectPrize(item);
+        totalKarma += result.value;
         
-        // Calculate karma value
-        if (item.prizeType === 'karma') {
-            totalKarma += item.value;
-        } else if (item.prizeType === 'token') {
-            // Tokens give free plays - worth 3 karma
-            totalKarma += 3;
-        } else if (item.prizeType === 'jackpot') {
-            totalKarma += item.value;
-            spawnFireworks('#fbbf24');
-            screenFlash('#fbbf24', 0.3);
+        if (result.value > biggestWin) biggestWin = result.value;
+        if (item.prizeType === 'jackpot' || item.prizeType === 'megajackpot') {
+            gotJackpot = true;
         }
         
-        // Visual feedback
+        // Visual feedback based on prize type
         if (item.type === 'coin') {
-            playTick(500);
+            playTick(600);
+            spawnParticles(item.color, 3);
+        } else if (item.type === 'jackpot' || item.type === 'megaJackpot') {
+            playWinSound('legendary');
+            spawnFireworks(item.color);
+            screenFlash(item.color, 0.4);
+            screenShake = 20;
+            addNotification(`🌟 JACKPOT! +${result.value}☯`, '#fbbf24', 3000);
+        } else if (item.type === 'crystal' || item.type === 'trophy') {
+            playWinSound('epic');
+            spawnParticles(item.color, 25);
+            screenFlash(item.color, 0.2);
+            screenShake = 10;
         } else {
-            playWinSound(getPrizeRarity(item.type));
-            spawnParticles(getPrizeColor(item.type), 15);
+            playWinSound('uncommon');
+            spawnParticles(item.color, 12);
         }
         
-        lastCollections.push({
-            icon: item.icon,
-            value: item.value,
-            type: item.type,
-            timestamp: Date.now()
-        });
+        // Combo notification
+        if (result.combo > 2) {
+            addNotification(`${result.combo}× COMBO!`, '#f472b6', 1500);
+        }
+        
+        // Gold rush notification
+        if (result.isGoldRush && item.type !== 'coin') {
+            addNotification('2× GOLD RUSH!', '#fbbf24', 1000);
+        }
     }
     
     if (totalKarma > 0) {
         currentKarma += totalKarma;
         addFn(totalKarma);
-        updateKarmaDisplay();
-        showCollectionNotification(totalKarma);
+        updateKarmaDisplay(totalKarma);
+        
+        if (items.length > 1 && !gotJackpot) {
+            addNotification(`+${totalKarma}☯`, '#4ade80', 1500);
+        }
     }
     
     updateStats();
 }
 
-function getPrizeRarity(type) {
-    const rarityMap = {
-        coin: 'common',
-        token: 'uncommon',
-        statBoost: 'rare',
-        karmaGem: 'epic',
-        reroll: 'epic',
-        trophy: 'legendary',
-        jackpot: 'legendary'
-    };
-    return rarityMap[type] || 'common';
-}
-
-function getPrizeColor(type) {
-    const colorMap = {
-        coin: '#fbbf24',
-        token: '#4ade80',
-        statBoost: '#60a5fa',
-        karmaGem: '#c084fc',
-        reroll: '#f472b6',
-        trophy: '#fbbf24',
-        jackpot: '#fbbf24'
-    };
-    return colorMap[type] || '#fbbf24';
-}
-
-function showCollectionNotification(amount) {
-    showCollectionPopup = true;
-    collectionPopupTimer = 120; // ~2 seconds at 60fps
+function updateEventBanner() {
+    const game = getPusherGame();
+    const banner = document.getElementById('event-banner');
     
-    const popup = document.getElementById('collection-popup');
-    popup.innerHTML = `<div class="collection-amount">+${amount} ☯</div>`;
-    popup.classList.add('show');
-}
-
-function updateCollectionPopup() {
-    if (showCollectionPopup) {
-        collectionPopupTimer--;
-        if (collectionPopupTimer <= 0) {
-            showCollectionPopup = false;
-            document.getElementById('collection-popup').classList.remove('show');
+    if (game.activeEvent) {
+        banner.innerHTML = `
+            <div class="event-name">${game.activeEvent.name}</div>
+            <div class="event-effect">${game.activeEvent.effect}</div>
+            <div class="event-timer" style="width: ${(game.eventTimer / SPECIAL_EVENTS[game.activeEvent.type].duration) * 100}%"></div>
+        `;
+        banner.classList.add('active');
+        
+        // Trigger notification on new event
+        if (game.eventTimer > SPECIAL_EVENTS[game.activeEvent.type].duration - 100) {
+            addNotification(game.activeEvent.name, '#fbbf24', 2000);
+            playWinSound('rare');
         }
+    } else {
+        banner.classList.remove('active');
     }
+}
+
+function updateComboDisplay() {
+    const game = getPusherGame();
+    const display = document.getElementById('combo-display');
     
-    // Clean old collections
-    lastCollections = lastCollections.filter(c => Date.now() - c.timestamp < 3000);
+    if (game.combo > 1) {
+        display.innerHTML = `<span class="combo-count">${game.combo}×</span><span class="combo-label">COMBO</span>`;
+        display.classList.add('show');
+    } else {
+        display.classList.remove('show');
+    }
 }
 
 function render(game) {
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const platform = game.getPlatform();
+    const pusherBar = game.getPusherBar();
+    const pusherWidth = game.getPusherWidth();
     
-    const platform = game.getPlatformBounds();
-    const pusher = game.getPusherBounds();
+    // Apply screen shake
+    ctx.save();
+    if (screenShake > 0.5) {
+        ctx.translate(
+            (Math.random() - 0.5) * screenShake,
+            (Math.random() - 0.5) * screenShake
+        );
+    }
     
-    // Draw cabinet background
-    ctx.fillStyle = '#1a1a2e';
+    // Clear
+    ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Draw platform
-    const gradient = ctx.createLinearGradient(platform.x, platform.y, platform.x, platform.edgeY);
-    gradient.addColorStop(0, '#2a2a4e');
-    gradient.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = gradient;
+    // Draw cabinet background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    bgGrad.addColorStop(0, '#1a1a2e');
+    bgGrad.addColorStop(1, '#0f0f1a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Platform glow (subtle)
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.2)';
+    ctx.shadowBlur = 20;
+    
+    // Platform background
+    const platGrad = ctx.createLinearGradient(platform.x, platform.y, platform.x, platform.edgeY);
+    platGrad.addColorStop(0, '#252540');
+    platGrad.addColorStop(0.5, '#1e1e35');
+    platGrad.addColorStop(1, '#18182a');
+    ctx.fillStyle = platGrad;
     ctx.fillRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
     
+    ctx.shadowBlur = 0;
+    
     // Platform border
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = '#3a3a5a';
     ctx.lineWidth = 3;
     ctx.strokeRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
     
-    // Draw pusher bar
-    const pusherGradient = ctx.createLinearGradient(pusher.x, pusher.y, pusher.x, pusher.y + pusher.height);
-    pusherGradient.addColorStop(0, '#666');
-    pusherGradient.addColorStop(1, '#333');
-    ctx.fillStyle = pusherGradient;
-    ctx.fillRect(pusher.x, pusher.y, pusher.width, pusher.height);
+    // Pusher bar
+    const pusherGrad = ctx.createLinearGradient(0, pusherBar.y, 0, pusherBar.y + pusherBar.height);
+    pusherGrad.addColorStop(0, '#888');
+    pusherGrad.addColorStop(0.5, '#666');
+    pusherGrad.addColorStop(1, '#444');
+    ctx.fillStyle = pusherGrad;
+    
+    // Rounded pusher bar
+    const barX = game.pusherX;
+    ctx.beginPath();
+    ctx.roundRect(barX, pusherBar.y, pusherWidth, pusherBar.height, 4);
+    ctx.fill();
     
     // Pusher shine
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillRect(pusher.x, pusher.y, pusher.width, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(barX + 2, pusherBar.y + 2, pusherWidth - 4, 4);
     
-    // Draw win zone
-    ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
-    ctx.fillRect(platform.x, platform.edgeY - 20, platform.width, 40);
+    // Mega push indicator
+    if (game.activeEvent?.type === 'megaPush') {
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(barX - 2, pusherBar.y - 2, pusherWidth + 4, pusherBar.height + 4);
+        ctx.setLineDash([]);
+    }
+    
+    // Win zone
+    const winZoneGrad = ctx.createLinearGradient(0, platform.edgeY - 25, 0, platform.edgeY + 20);
+    winZoneGrad.addColorStop(0, 'rgba(74, 222, 128, 0.1)');
+    winZoneGrad.addColorStop(0.5, 'rgba(74, 222, 128, 0.25)');
+    winZoneGrad.addColorStop(1, 'rgba(74, 222, 128, 0.4)');
+    ctx.fillStyle = winZoneGrad;
+    ctx.fillRect(platform.x, platform.edgeY - 25, platform.width, 45);
+    
+    // Win zone line
     ctx.strokeStyle = '#4ade80';
     ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
+    ctx.setLineDash([8, 4]);
     ctx.beginPath();
     ctx.moveTo(platform.x, platform.edgeY);
     ctx.lineTo(platform.x + platform.width, platform.edgeY);
     ctx.stroke();
     ctx.setLineDash([]);
     
-    // Draw items
-    for (const item of game.items) {
-        drawItem(item);
+    // "WIN" text
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.6)';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('▼ WIN ▼', platform.x + platform.width / 2, platform.edgeY + 15);
+    
+    // Draw items (back to front for proper layering)
+    const sortedItems = [...game.items].sort((a, b) => a.y - b.y);
+    for (const item of sortedItems) {
+        drawItem(item, platform);
     }
     
     // Draw drop preview
-    const dropX = platform.x + 20 + dropPosition * (platform.width - 40);
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
+    const dropX = platform.x + 15 + dropPosition * (platform.width - 30);
+    
+    // Drop line
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([3, 3]);
+    ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(dropX, 20);
-    ctx.lineTo(dropX, platform.y);
+    ctx.moveTo(dropX, 15);
+    ctx.lineTo(dropX, platform.y - 5);
     ctx.stroke();
     ctx.setLineDash([]);
     
-    // Drop indicator coin
-    ctx.font = '20px serif';
+    // Drop coin preview
+    ctx.font = '22px serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🪙', dropX, 35);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🪙', dropX, 25);
+    
+    // Gold rush overlay
+    if (game.activeEvent?.type === 'goldRush') {
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
+    
+    // Frenzy overlay
+    if (game.activeEvent?.type === 'frenzy') {
+        const pulse = Math.sin(Date.now() / 100) * 0.03;
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.05 + pulse})`;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
+    
+    ctx.restore();
 }
 
-function drawItem(item) {
+function drawItem(item, platform) {
     ctx.save();
-    
-    // Apply wobble
     ctx.translate(item.x + item.wobble, item.y);
+    
+    // Glow effect
+    if (item.glow > 0 || item.type !== 'coin') {
+        const glowColor = item.color || '#fbbf24';
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 8;
+    }
     
     // Flash effect
     if (item.flash > 0) {
         ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 20 * item.flash;
+        ctx.shadowBlur = 15 * item.flash;
     }
     
-    // Draw glow for non-coins
-    if (item.type !== 'coin') {
-        const color = getPrizeColor(item.type);
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 10;
+    // Near-edge tension glow
+    if (item.y + item.radius > platform.edgeY - 30) {
+        ctx.shadowColor = '#4ade80';
+        ctx.shadowBlur = 12;
     }
     
-    // Draw item
-    ctx.font = `${item.radius * 1.8}px serif`;
+    // Draw icon
+    const size = item.radius * 1.8;
+    ctx.font = `${size}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(item.icon, 0, 0);
@@ -361,16 +500,59 @@ function drawItem(item) {
     ctx.restore();
 }
 
-function updateKarmaDisplay() {
+function addNotification(text, color = '#fff', duration = 2000) {
+    notifications.push({
+        text,
+        color,
+        createdAt: Date.now(),
+        duration,
+        y: 0
+    });
+}
+
+function updateNotifications() {
+    const container = document.getElementById('notifications');
+    const now = Date.now();
+    
+    notifications = notifications.filter(n => now - n.createdAt < n.duration);
+    
+    container.innerHTML = notifications.map((n, i) => {
+        const age = now - n.createdAt;
+        const progress = age / n.duration;
+        const opacity = progress < 0.2 ? progress * 5 : progress > 0.7 ? (1 - progress) * 3.33 : 1;
+        const y = -i * 35;
+        
+        return `<div class="notification" style="color: ${n.color}; opacity: ${opacity}; transform: translateY(${y}px)">${n.text}</div>`;
+    }).join('');
+}
+
+function updateKarmaDisplay(delta = 0) {
     const display = document.getElementById('pusher-karma');
-    if (display) display.textContent = Math.floor(currentKarma);
+    if (display) {
+        if (delta > 0) {
+            display.classList.add('pulse');
+            setTimeout(() => display.classList.remove('pulse'), 300);
+        }
+        display.textContent = Math.floor(currentKarma);
+    }
     
     // Update button states
+    const game = getPusherGame();
     const dropBtn = document.getElementById('btn-drop');
-    const drop5Btn = document.getElementById('btn-drop-5');
+    const multiBtn = document.getElementById('btn-drop-multi');
+    const multiCount = game.getMultiDropCount();
     
     dropBtn.classList.toggle('disabled', currentKarma < DROP_COST);
-    drop5Btn.classList.toggle('disabled', currentKarma < DROP_COST * 5);
+    multiBtn.classList.toggle('disabled', currentKarma < DROP_COST * multiCount);
+    
+    // Update multi button label
+    document.getElementById('multi-label').textContent = `×${multiCount}`;
+    document.getElementById('multi-cost').textContent = `${DROP_COST * multiCount}☯`;
+    
+    // Update upgrade panel if open
+    if (showUpgradePanel) {
+        updateUpgradePanel();
+    }
 }
 
 function updateStats() {
@@ -383,8 +565,61 @@ function updateStats() {
             <span>Dropped: ${stats.coinsDropped}</span>
             <span>Collected: ${stats.prizesCollected}</span>
             <span>Earned: ${stats.karmaEarned}☯</span>
+            ${stats.jackpots > 0 ? `<span class="jackpot-stat">🌟 ${stats.jackpots}</span>` : ''}
         `;
     }
+}
+
+function updateUpgradePanel() {
+    const game = getPusherGame();
+    const list = document.getElementById('upgrade-list');
+    
+    const upgradeTypes = ['platform', 'pusherSpeed', 'prizeQuality', 'multiDrop', 'autoDrop'];
+    
+    list.innerHTML = upgradeTypes.map(type => {
+        const info = game.getUpgradeInfo(type);
+        const canAfford = !info.isMaxed && currentKarma >= info.nextCost;
+        
+        return `
+            <div class="upgrade-item ${info.isMaxed ? 'maxed' : ''} ${canAfford ? 'affordable' : ''}">
+                <div class="upgrade-icon">${info.icon}</div>
+                <div class="upgrade-info">
+                    <div class="upgrade-name">${info.name}</div>
+                    <div class="upgrade-level">${info.currentLabel}</div>
+                    <div class="upgrade-desc">${info.description}</div>
+                </div>
+                <div class="upgrade-action">
+                    ${info.isMaxed ? 
+                        '<span class="maxed-label">MAX</span>' : 
+                        `<button class="upgrade-buy-btn ${canAfford ? '' : 'disabled'}" data-type="${type}" data-cost="${info.nextCost}">
+                            ${info.nextCost}☯ → ${info.nextLabel}
+                        </button>`
+                    }
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Bind upgrade buttons
+    list.querySelectorAll('.upgrade-buy-btn:not(.disabled)').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            const cost = parseInt(btn.dataset.cost);
+            
+            if (currentKarma >= cost) {
+                currentKarma -= cost;
+                spendFn(cost);
+                game.applyUpgrade(type);
+                updateKarmaDisplay();
+                updateUpgradePanel();
+                updateStats();
+                
+                addNotification(`⬆️ ${UPGRADES[type].name} upgraded!`, '#4ade80');
+                playWinSound('rare');
+                screenShake = 5;
+            }
+        });
+    });
 }
 
 function shakeButton(id) {
@@ -404,6 +639,7 @@ export function hidePusherGame() {
     }
     canvas = null;
     ctx = null;
+    notifications = [];
 }
 
 export function updatePusherKarma(karma) {
