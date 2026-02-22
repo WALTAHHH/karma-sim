@@ -394,11 +394,6 @@ function render(game) {
     // Pusher bar with 3D depth
     const barX = game.pusherX;
     
-    // Shadow under pusher
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 4;
-    
     // Main pusher body
     const pusherGrad = ctx.createLinearGradient(0, pusherBar.y, 0, pusherBar.y + pusherBar.height);
     pusherGrad.addColorStop(0, '#aaa');
@@ -414,9 +409,6 @@ function render(game) {
         ctx.rect(barX, pusherBar.y, pusherWidth, pusherBar.height);
     }
     ctx.fill();
-    
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
     
     // Top shine
     ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
@@ -509,35 +501,32 @@ function drawItem(item, platform) {
     // 2.5D depth effect: items scale larger as they approach the edge
     const depthRange = platform.edgeY - platform.y;
     const depthFactor = Math.max(0, (item.y - platform.y) / depthRange);
-    const scale = 0.85 + depthFactor * 0.3; // 0.85x at top, 1.15x at bottom
+    const scale = 0.85 + depthFactor * 0.3;
     
     ctx.translate(item.x + (item.wobble || 0), item.y);
     ctx.scale(scale, scale);
     
-    // Depth shadow (grows as item gets "closer")
-    const shadowSize = 2 + depthFactor * 6;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = shadowSize;
-    ctx.shadowOffsetY = shadowSize * 0.5;
+    // Only apply expensive shadow effects for special states
+    const isSpecial = item.type !== 'coin';
+    const isNearEdge = item.y + item.radius > platform.edgeY - 30;
+    const hasEffect = item.glow > 0 || item.flash > 0;
     
-    // Glow effect
-    if (item.glow > 0 || item.type !== 'coin') {
-        const glowColor = item.color || '#fbbf24';
-        ctx.shadowColor = glowColor;
-        ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 8 + depthFactor * 4;
+    if (isSpecial || isNearEdge || hasEffect) {
+        if (item.flash > 0) {
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 12 * item.flash;
+        } else if (isNearEdge) {
+            ctx.shadowColor = '#4ade80';
+            ctx.shadowBlur = 10;
+        } else if (isSpecial) {
+            ctx.shadowColor = item.color || '#fbbf24';
+            ctx.shadowBlur = 6;
+        } else if (item.glow > 0) {
+            ctx.shadowColor = item.color || '#fbbf24';
+            ctx.shadowBlur = 4 * item.glow;
+        }
     }
-    
-    // Flash effect
-    if (item.flash > 0) {
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 15 * item.flash;
-    }
-    
-    // Near-edge tension glow
-    if (item.y + item.radius > platform.edgeY - 30) {
-        ctx.shadowColor = '#4ade80';
-        ctx.shadowBlur = 12 + depthFactor * 5;
-    }
+    // No shadow for regular coins (big perf win)
     
     // Draw icon
     const size = item.radius * 1.8;
