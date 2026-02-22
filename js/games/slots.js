@@ -303,4 +303,4 @@ export function debugGetState() {
 }
 
 // Export costs for UI
-export { PULL_COST, MULTI_PULL_COST, MULTI_PULL_COUNT };
+// Note: PULL_COST, MULTI_PULL_COST, MULTI_PULL_COUNT already exported above
