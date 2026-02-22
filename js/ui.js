@@ -47,7 +47,7 @@ export function clear() {
 }
 
 // Display the title screen / landing page
-export function showTitleScreen(onBegin, onCollections, runHistory = null) {
+export function showTitleScreen(onBegin, onCollections, runHistory = null, onGacha = null, karma = 0) {
     const contentEl = getContentEl();
     const choicesEl = getChoicesEl();
 
@@ -86,6 +86,15 @@ export function showTitleScreen(onBegin, onCollections, runHistory = null) {
     beginBtn.textContent = 'Begin';
     beginBtn.addEventListener('click', onBegin);
     menu.appendChild(beginBtn);
+
+    // Gacha button (if karma > 0 and callback provided)
+    if (onGacha && karma > 0) {
+        const gachaBtn = document.createElement('button');
+        gachaBtn.className = 'begin-button gacha-title-btn';
+        gachaBtn.innerHTML = '🎰 Karma Slots';
+        gachaBtn.addEventListener('click', () => onGacha(karma));
+        menu.appendChild(gachaBtn);
+    }
 
     // Collections button
     const collectionsBtn = document.createElement('button');

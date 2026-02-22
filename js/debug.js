@@ -36,6 +36,7 @@ export function initDebug() {
     
     toggle.addEventListener('click', () => {
         debugPanelVisible = !debugPanelVisible;
+        window.debugMode = debugPanelVisible; // Expose to other modules
         panel.classList.toggle('visible', debugPanelVisible);
         if (debugPanelVisible) {
             updateDebugPanel();

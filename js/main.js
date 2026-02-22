@@ -52,6 +52,7 @@ import {
     discoverTag,
     getTagKarmaModifier
 } from './tags.js';
+import { showGachaMachine, hideGachaMachine, setDebugMode as setGachaDebugMode } from './gachaUI.js';
 
 // Game state
 const state = {
@@ -195,7 +196,8 @@ function showTitle() {
         ? persistentTracking.runHistory
         : null;
 
-    ui.showTitleScreen(handleBegin, showCollections, runHistory);
+    const karma = getKarma();
+    ui.showTitleScreen(handleBegin, showCollections, runHistory, showGachaScreen, karma);
     updatePanels();
 }
 
@@ -819,7 +821,8 @@ function showSummary() {
     }
 
     if (karma > 0) {
-        ui.showButton('Spend Karma', showUnlockShop, hasChildren);
+        ui.showButton('🎰 Karma Slots', () => showGachaScreen(karma), hasChildren);
+        ui.showButton('Spend Karma', showUnlockShop, true);
         ui.showButton('Begin again', showTitle, true);
     } else {
         ui.showButton('Begin again', showTitle, hasChildren);
@@ -843,6 +846,19 @@ function startAsDescendant(parentLife) {
 
     // Start the new life
     startLife();
+}
+
+// Show gacha screen
+function showGachaScreen(currentKarma) {
+    showGachaMachine(
+        currentKarma,
+        (amount) => spendKarma(amount),  // Spend karma function
+        (amount) => adjustKarma(amount), // Add karma function (for rewards)
+        () => {
+            // On close, refresh the summary screen
+            showSummary();
+        }
+    );
 }
 
 // Show unlock shop

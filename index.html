@@ -408,6 +408,24 @@
             padding: 12px 25px;
         }
 
+        .begin-button.gacha-title-btn {
+            background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+            border: 2px solid #fbbf24;
+            color: #000;
+            font-weight: bold;
+            animation: gachaPulse 2s ease-in-out infinite;
+        }
+
+        .begin-button.gacha-title-btn:hover {
+            background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 100%);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+
+        @keyframes gachaPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.6); }
+        }
+
         /* Custom scrollbar styling for run history */
         .run-history-content::-webkit-scrollbar {
             width: 8px;
@@ -1467,6 +1485,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="css/gacha.css">
 </head>
 <body>
     <button id="debug-toggle">DBG</button>
