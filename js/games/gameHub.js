@@ -5,6 +5,8 @@ import { showGachaMachine, hideGachaMachine, setDebugMode as setSlotsDebugMode }
 import { showPullGame, hidePullGame, setDebugMode as setPullDebugMode } from './pullUI.js';
 import { showWheelGame, hideWheelGame } from './wheelUI.js';
 import { showPlinkoGame, hidePlinkoGame } from './plinkoUI.js';
+import { showClawGame, hideClawGame } from './clawUI.js';
+import { showScratchGame, hideScratchGame } from './scratchUI.js';
 
 let hubContainer = null;
 let currentKarma = 0;
@@ -49,6 +51,24 @@ const GAMES = [
         available: true,
         minKarma: 3,
         launch: launchPlinko
+    },
+    {
+        id: 'scratch',
+        name: 'Scratch Cards',
+        icon: '🎫',
+        description: 'Scratch to reveal your fate!',
+        available: true,
+        minKarma: 3,
+        launch: launchScratch
+    },
+    {
+        id: 'claw',
+        name: 'Karma Claw',
+        icon: '🎮',
+        description: 'Grab prizes with skill!',
+        available: true,
+        minKarma: 5,
+        launch: launchClaw
     }
 ];
 
@@ -210,11 +230,55 @@ function launchPlinko() {
     );
 }
 
+function launchScratch() {
+    // Hide the hub but don't remove it
+    hubContainer.style.display = 'none';
+    
+    showScratchGame(
+        currentKarma,
+        (amount) => {
+            spendKarmaFn(amount);
+            currentKarma -= amount;
+        },
+        (amount) => {
+            addKarmaFn(amount);
+            currentKarma += amount;
+        },
+        () => {
+            // On scratch close, return to hub
+            returnToHub();
+        }
+    );
+}
+
+function launchClaw() {
+    // Hide the hub but don't remove it
+    hubContainer.style.display = 'none';
+    
+    showClawGame(
+        currentKarma,
+        (amount) => {
+            spendKarmaFn(amount);
+            currentKarma -= amount;
+        },
+        (amount) => {
+            addKarmaFn(amount);
+            currentKarma += amount;
+        },
+        () => {
+            // On claw close, return to hub
+            returnToHub();
+        }
+    );
+}
+
 function returnToHub() {
     hideGachaMachine();
     hidePullGame();
     hideWheelGame();
     hidePlinkoGame();
+    hideScratchGame();
+    hideClawGame();
     
     if (hubContainer) {
         hubContainer.style.display = 'flex';
@@ -238,6 +302,8 @@ export function hideGameHub() {
     hidePullGame();
     hideWheelGame();
     hidePlinkoGame();
+    hideScratchGame();
+    hideClawGame();
     if (hubContainer) {
         hubContainer.remove();
         hubContainer = null;

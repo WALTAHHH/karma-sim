@@ -1,0 +1,560 @@
+/* Scratch Card Styles */
+
+.scratch-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 20, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.scratch-machine {
+    background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 380px;
+    width: 95%;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(100, 100, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Header */
+.scratch-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.scratch-title {
+    font-size: 1.5rem;
+    margin: 0 0 12px 0;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s infinite;
+}
+
+.scratch-karma-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    position: relative;
+}
+
+.scratch-karma-display .karma-icon {
+    font-size: 1.4rem;
+}
+
+.scratch-karma-display .karma-delta {
+    position: absolute;
+    right: -30px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+.scratch-karma-display .karma-delta.show {
+    opacity: 1;
+    animation: deltaFloat 1.5s ease forwards;
+}
+
+.scratch-karma-display .karma-delta.positive { color: #4ade80; }
+.scratch-karma-display .karma-delta.negative { color: #ef4444; }
+
+/* Stage */
+.scratch-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.scratch-card-container {
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.scratch-card-placeholder {
+    text-align: center;
+    color: #666;
+}
+
+.placeholder-text {
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    opacity: 0.5;
+}
+
+/* Card Canvas */
+.scratch-card {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.symbol-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.scratch-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="none" stroke="%23fff" stroke-width="2" opacity="0.5"/></svg>') 16 16, crosshair;
+}
+
+/* Card shimmer hints */
+.scratch-card.shimmer-gold {
+    animation: goldShimmer 2s ease infinite;
+}
+
+.scratch-card.shimmer-purple {
+    animation: purpleShimmer 2s ease infinite;
+}
+
+.scratch-card.shimmer-blue {
+    animation: blueShimmer 2s ease infinite;
+}
+
+@keyframes goldShimmer {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+    50% { box-shadow: 0 4px 30px rgba(251, 191, 36, 0.4), 0 0 20px rgba(251, 191, 36, 0.2); }
+}
+
+@keyframes purpleShimmer {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+    50% { box-shadow: 0 4px 30px rgba(168, 85, 247, 0.4), 0 0 20px rgba(168, 85, 247, 0.2); }
+}
+
+@keyframes blueShimmer {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+    50% { box-shadow: 0 4px 30px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2); }
+}
+
+/* Win highlights */
+.win-highlight {
+    position: absolute;
+    pointer-events: none;
+    animation: winPulse 0.8s ease infinite;
+    border: 3px solid;
+    box-sizing: border-box;
+}
+
+.win-highlight.rarity-common {
+    border-color: #888888;
+    box-shadow: inset 0 0 20px rgba(136, 136, 136, 0.5);
+}
+
+.win-highlight.rarity-uncommon {
+    border-color: #4ade80;
+    box-shadow: inset 0 0 20px rgba(74, 222, 128, 0.5);
+}
+
+.win-highlight.rarity-rare {
+    border-color: #60a5fa;
+    box-shadow: inset 0 0 20px rgba(96, 165, 250, 0.5);
+}
+
+.win-highlight.rarity-epic {
+    border-color: #c084fc;
+    box-shadow: inset 0 0 20px rgba(192, 132, 252, 0.5);
+}
+
+.win-highlight.rarity-legendary {
+    border-color: #fbbf24;
+    box-shadow: inset 0 0 25px rgba(251, 191, 36, 0.6);
+    animation: legendaryPulse 0.5s ease infinite;
+}
+
+@keyframes winPulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+@keyframes legendaryPulse {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+}
+
+/* Result display */
+.scratch-result {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 20;
+}
+
+.scratch-result.show {
+    animation: resultPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.result-content {
+    text-align: center;
+    background: rgba(20, 20, 40, 0.95);
+    padding: 20px 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.result-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+}
+
+.result-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.result-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.result-lines {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-top: 8px;
+}
+
+/* Result variants */
+.result-icon.bust { animation: bustShake 0.5s ease; }
+.result-text.bust { color: #ef4444; }
+.result-value.bust { color: #ef4444; }
+
+.result-icon.jackpot { animation: jackpotPulse 0.5s ease infinite; }
+.result-text.jackpot { 
+    color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+.result-value.jackpot { 
+    color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+.result-icon.win { animation: winBounce 0.5s ease; }
+.result-text.win { color: #4ade80; }
+
+/* Controls */
+.scratch-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.scratch-buy-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 36px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 
+        0 4px 15px rgba(251, 191, 36, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.scratch-buy-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(251, 191, 36, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.scratch-buy-btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.scratch-buy-btn:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.buy-text {
+    font-size: 1.1rem;
+}
+
+.buy-cost {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.scratch-auto-btn {
+    padding: 14px 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scratch-auto-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.scratch-auto-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Stats */
+.scratch-stats {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.scratch-stats .stat {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px 12px;
+    border-radius: 10px;
+}
+
+/* Footer */
+.scratch-footer {
+    display: flex;
+    justify-content: center;
+}
+
+.scratch-btn-secondary {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scratch-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+/* Particle container */
+.scratch-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes shimmer {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
+}
+
+@keyframes deltaFloat {
+    0% { 
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+}
+
+@keyframes resultPop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes bustShake {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-15deg); }
+    40% { transform: rotate(15deg); }
+    60% { transform: rotate(-10deg); }
+    80% { transform: rotate(10deg); }
+}
+
+@keyframes jackpotPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes winBounce {
+    0% { transform: scale(0.5); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Shared particles */
+.scratch-particles .particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: particleFly 1s ease-out forwards;
+}
+
+.scratch-particles .firework {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    animation: fireworkBurst 0.8s ease-out forwards;
+}
+
+@keyframes particleFly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) scale(0.3);
+    }
+}
+
+@keyframes fireworkBurst {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) scale(0.2);
+    }
+}
+
+/* Screen flash */
+.screen-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    animation: flashFade 0.4s ease-out forwards;
+}
+
+@keyframes flashFade {
+    0% { opacity: 0.3; }
+    100% { opacity: 0; }
+}
+
+/* Mega shake */
+.mega-shake {
+    animation: megaShake 0.5s ease;
+}
+
+@keyframes megaShake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-10px) rotate(-1deg); }
+    20% { transform: translateX(10px) rotate(1deg); }
+    30% { transform: translateX(-8px) rotate(-1deg); }
+    40% { transform: translateX(8px) rotate(1deg); }
+    50% { transform: translateX(-5px); }
+    60% { transform: translateX(5px); }
+    70% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+    90% { transform: translateX(-1px); }
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+    .scratch-machine {
+        padding: 16px;
+    }
+    
+    .scratch-card-container,
+    .scratch-card {
+        width: 260px;
+        height: 260px;
+    }
+    
+    .scratch-title {
+        font-size: 1.3rem;
+    }
+    
+    .scratch-buy-btn {
+        padding: 12px 28px;
+        font-size: 1rem;
+    }
+    
+    .scratch-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+}
