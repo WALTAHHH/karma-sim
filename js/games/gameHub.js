@@ -7,6 +7,7 @@ import { showWheelGame, hideWheelGame } from './wheelUI.js';
 import { showPlinkoGame, hidePlinkoGame } from './plinkoUI.js';
 import { showClawGame, hideClawGame } from './clawUI.js';
 import { showScratchGame, hideScratchGame } from './scratchUI.js';
+import { showPusherGame, hidePusherGame } from './pusherUI.js';
 
 let hubContainer = null;
 let currentKarma = 0;
@@ -69,6 +70,16 @@ const GAMES = [
         available: true,
         minKarma: 5,
         launch: launchClaw
+    },
+    {
+        id: 'pusher',
+        name: 'Karma Pusher',
+        icon: '🪙',
+        description: 'Drop coins, push prizes!',
+        available: true,
+        minKarma: 1,
+        launch: launchPusher,
+        featured: true
     }
 ];
 
@@ -272,6 +283,27 @@ function launchClaw() {
     );
 }
 
+function launchPusher() {
+    // Hide the hub but don't remove it
+    hubContainer.style.display = 'none';
+    
+    showPusherGame(
+        currentKarma,
+        (amount) => {
+            spendKarmaFn(amount);
+            currentKarma -= amount;
+        },
+        (amount) => {
+            addKarmaFn(amount);
+            currentKarma += amount;
+        },
+        () => {
+            // On pusher close, return to hub
+            returnToHub();
+        }
+    );
+}
+
 function returnToHub() {
     hideGachaMachine();
     hidePullGame();
@@ -279,6 +311,7 @@ function returnToHub() {
     hidePlinkoGame();
     hideScratchGame();
     hideClawGame();
+    hidePusherGame();
     
     if (hubContainer) {
         hubContainer.style.display = 'flex';
