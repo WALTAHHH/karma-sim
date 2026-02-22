@@ -361,37 +361,73 @@ function render(game) {
     ctx.shadowColor = 'rgba(251, 191, 36, 0.2)';
     ctx.shadowBlur = 20;
     
-    // Platform background
+    // Platform background with metallic gradient
     const platGrad = ctx.createLinearGradient(platform.x, platform.y, platform.x, platform.edgeY);
-    platGrad.addColorStop(0, '#252540');
-    platGrad.addColorStop(0.5, '#1e1e35');
-    platGrad.addColorStop(1, '#18182a');
+    platGrad.addColorStop(0, '#3a3a5a');
+    platGrad.addColorStop(0.3, '#2a2a45');
+    platGrad.addColorStop(0.7, '#1e1e35');
+    platGrad.addColorStop(1, '#151525');
     ctx.fillStyle = platGrad;
     ctx.fillRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
     
     ctx.shadowBlur = 0;
     
-    // Platform border
-    ctx.strokeStyle = '#3a3a5a';
+    // Depth grid lines (perspective effect)
+    ctx.strokeStyle = 'rgba(80, 80, 120, 0.2)';
+    ctx.lineWidth = 1;
+    const gridSpacing = 25;
+    for (let y = platform.y + gridSpacing; y < platform.edgeY; y += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(platform.x, y);
+        ctx.lineTo(platform.x + platform.width, y);
+        ctx.stroke();
+    }
+    
+    // Platform border with inner highlight
+    ctx.strokeStyle = '#4a4a6a';
     ctx.lineWidth = 3;
     ctx.strokeRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
+    ctx.strokeStyle = 'rgba(100, 100, 140, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(platform.x + 2, platform.y + 2, platform.width - 4, platform.edgeY - platform.y - 4);
     
-    // Pusher bar
+    // Pusher bar with 3D depth
+    const barX = game.pusherX;
+    
+    // Shadow under pusher
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    
+    // Main pusher body
     const pusherGrad = ctx.createLinearGradient(0, pusherBar.y, 0, pusherBar.y + pusherBar.height);
-    pusherGrad.addColorStop(0, '#888');
-    pusherGrad.addColorStop(0.5, '#666');
-    pusherGrad.addColorStop(1, '#444');
+    pusherGrad.addColorStop(0, '#aaa');
+    pusherGrad.addColorStop(0.3, '#888');
+    pusherGrad.addColorStop(0.7, '#666');
+    pusherGrad.addColorStop(1, '#555');
     ctx.fillStyle = pusherGrad;
     
-    // Rounded pusher bar
-    const barX = game.pusherX;
     ctx.beginPath();
-    ctx.roundRect(barX, pusherBar.y, pusherWidth, pusherBar.height, 4);
+    if (ctx.roundRect) {
+        ctx.roundRect(barX, pusherBar.y, pusherWidth, pusherBar.height, 4);
+    } else {
+        ctx.rect(barX, pusherBar.y, pusherWidth, pusherBar.height);
+    }
     ctx.fill();
     
-    // Pusher shine
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillRect(barX + 2, pusherBar.y + 2, pusherWidth - 4, 4);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Top shine
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(barX + 3, pusherBar.y + 2, pusherWidth - 6, 3);
+    
+    // Front face (3D depth)
+    const frontGrad = ctx.createLinearGradient(0, pusherBar.y + pusherBar.height - 4, 0, pusherBar.y + pusherBar.height + 6);
+    frontGrad.addColorStop(0, '#555');
+    frontGrad.addColorStop(1, '#333');
+    ctx.fillStyle = frontGrad;
+    ctx.fillRect(barX + 2, pusherBar.y + pusherBar.height - 2, pusherWidth - 4, 8);
     
     // Mega push indicator
     if (game.activeEvent?.type === 'megaPush') {
@@ -469,13 +505,26 @@ function render(game) {
 
 function drawItem(item, platform) {
     ctx.save();
-    ctx.translate(item.x + item.wobble, item.y);
+    
+    // 2.5D depth effect: items scale larger as they approach the edge
+    const depthRange = platform.edgeY - platform.y;
+    const depthFactor = Math.max(0, (item.y - platform.y) / depthRange);
+    const scale = 0.85 + depthFactor * 0.3; // 0.85x at top, 1.15x at bottom
+    
+    ctx.translate(item.x + (item.wobble || 0), item.y);
+    ctx.scale(scale, scale);
+    
+    // Depth shadow (grows as item gets "closer")
+    const shadowSize = 2 + depthFactor * 6;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = shadowSize;
+    ctx.shadowOffsetY = shadowSize * 0.5;
     
     // Glow effect
     if (item.glow > 0 || item.type !== 'coin') {
         const glowColor = item.color || '#fbbf24';
         ctx.shadowColor = glowColor;
-        ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 8;
+        ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 8 + depthFactor * 4;
     }
     
     // Flash effect
@@ -487,7 +536,7 @@ function drawItem(item, platform) {
     // Near-edge tension glow
     if (item.y + item.radius > platform.edgeY - 30) {
         ctx.shadowColor = '#4ade80';
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 12 + depthFactor * 5;
     }
     
     // Draw icon
