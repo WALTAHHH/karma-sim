@@ -2,17 +2,84 @@
 // Flashy pull mechanic where Karma buys chances at rewards
 
 const GACHA_KEY = 'karma_simulator_gacha';
-const PULL_COST = 3; // Karma per pull
-const MULTI_PULL_COUNT = 10;
-const MULTI_PULL_COST = 25; // Discount for 10-pull
+const GACHA_CONFIG_KEY = 'karma_simulator_gacha_config';
+
+// Default config (can be overridden via debug)
+const DEFAULT_CONFIG = {
+    pullCost: 3,
+    multiPullCount: 10,
+    multiPullCost: 25,
+    pityThreshold: 50, // Pulls until guaranteed rare+
+    weights: {
+        common: 60,
+        uncommon: 25,
+        rare: 10,
+        epic: 4,
+        legendary: 1
+    }
+};
+
+// Active config (mutable)
+let gachaConfig = { ...DEFAULT_CONFIG, weights: { ...DEFAULT_CONFIG.weights } };
+
+// Load saved config on init
+try {
+    const saved = localStorage.getItem(GACHA_CONFIG_KEY);
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        gachaConfig = { ...DEFAULT_CONFIG, ...parsed, weights: { ...DEFAULT_CONFIG.weights, ...parsed.weights } };
+    }
+} catch (e) { }
+
+// Config getters/setters
+export function getGachaConfig() {
+    return { ...gachaConfig, weights: { ...gachaConfig.weights } };
+}
+
+export function setGachaConfig(newConfig) {
+    gachaConfig = { 
+        ...gachaConfig, 
+        ...newConfig,
+        weights: { ...gachaConfig.weights, ...(newConfig.weights || {}) }
+    };
+    try {
+        localStorage.setItem(GACHA_CONFIG_KEY, JSON.stringify(gachaConfig));
+    } catch (e) { }
+    // Update RARITIES weights
+    Object.keys(gachaConfig.weights).forEach(key => {
+        if (RARITIES[key]) {
+            RARITIES[key].weight = gachaConfig.weights[key];
+        }
+    });
+}
+
+export function resetGachaConfig() {
+    gachaConfig = { ...DEFAULT_CONFIG, weights: { ...DEFAULT_CONFIG.weights } };
+    localStorage.removeItem(GACHA_CONFIG_KEY);
+    Object.keys(DEFAULT_CONFIG.weights).forEach(key => {
+        if (RARITIES[key]) {
+            RARITIES[key].weight = DEFAULT_CONFIG.weights[key];
+        }
+    });
+}
+
+// Legacy exports for compatibility
+export const PULL_COST = gachaConfig.pullCost;
+export const MULTI_PULL_COUNT = gachaConfig.multiPullCount;
+export const MULTI_PULL_COST = gachaConfig.multiPullCost;
+
+// Dynamic getters
+export function getPullCost() { return gachaConfig.pullCost; }
+export function getMultiPullCost() { return gachaConfig.multiPullCost; }
+export function getMultiPullCount() { return gachaConfig.multiPullCount; }
 
 // Rarity tiers with weights and colors
 export const RARITIES = {
-    common: { name: 'Common', weight: 60, color: '#888888', glow: 'rgba(136,136,136,0.5)' },
-    uncommon: { name: 'Uncommon', weight: 25, color: '#4ade80', glow: 'rgba(74,222,128,0.5)' },
-    rare: { name: 'Rare', weight: 10, color: '#60a5fa', glow: 'rgba(96,165,250,0.5)' },
-    epic: { name: 'Epic', weight: 4, color: '#c084fc', glow: 'rgba(192,132,252,0.5)' },
-    legendary: { name: 'Legendary', weight: 1, color: '#fbbf24', glow: 'rgba(251,191,36,0.7)' }
+    common: { name: 'Common', weight: gachaConfig.weights.common, color: '#888888', glow: 'rgba(136,136,136,0.5)' },
+    uncommon: { name: 'Uncommon', weight: gachaConfig.weights.uncommon, color: '#4ade80', glow: 'rgba(74,222,128,0.5)' },
+    rare: { name: 'Rare', weight: gachaConfig.weights.rare, color: '#60a5fa', glow: 'rgba(96,165,250,0.5)' },
+    epic: { name: 'Epic', weight: gachaConfig.weights.epic, color: '#c084fc', glow: 'rgba(192,132,252,0.5)' },
+    legendary: { name: 'Legendary', weight: gachaConfig.weights.legendary, color: '#fbbf24', glow: 'rgba(251,191,36,0.7)' }
 };
 
 // Reward pool - items that can be pulled

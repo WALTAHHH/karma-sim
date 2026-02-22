@@ -2,9 +2,11 @@
 // Deep juice pass: staggered stops, anticipation, symbol matching, cascading rewards
 
 import { 
-    RARITIES, REWARD_POOL, PULL_COST, MULTI_PULL_COST, MULTI_PULL_COUNT,
+    RARITIES, REWARD_POOL, 
+    getPullCost, getMultiPullCost, getMultiPullCount,
     doPull, doMultiPull, applyReward, getGachaState,
-    debugForcePull, debugResetGacha, debugSetPity, debugGetState
+    debugForcePull, debugResetGacha, debugSetPity, debugGetState,
+    getGachaConfig
 } from './gacha.js';
 
 let gachaContainer = null;
@@ -165,12 +167,12 @@ export function showGachaMachine(karma, spendKarmaFn, addKarmaFn, onClose) {
             <div class="gacha-buttons">
                 <button class="gacha-btn pull-single" id="btn-pull-single">
                     <span class="btn-text">PULL</span>
-                    <span class="btn-cost">${PULL_COST} ☯</span>
+                    <span class="btn-cost">${getPullCost()} ☯</span>
                 </button>
                 <button class="gacha-btn pull-multi" id="btn-pull-multi">
-                    <span class="btn-text">×${MULTI_PULL_COUNT}</span>
-                    <span class="btn-cost">${MULTI_PULL_COST} ☯</span>
-                    <span class="btn-bonus">SAVE ${PULL_COST * MULTI_PULL_COUNT - MULTI_PULL_COST}!</span>
+                    <span class="btn-text">×${getMultiPullCount()}</span>
+                    <span class="btn-cost">${getMultiPullCost()} ☯</span>
+                    <span class="btn-bonus">SAVE ${getPullCost() * getMultiPullCount() - getMultiPullCost()}!</span>
                 </button>
             </div>
             
@@ -243,15 +245,15 @@ function initializeReels() {
 
 function bindEvents(onClose) {
     document.getElementById('btn-pull-single').addEventListener('click', () => {
-        if (!isAnimating && currentKarma >= PULL_COST) handlePull();
+        if (!isAnimating && currentKarma >= getPullCost()) handlePull();
     });
     
     document.getElementById('btn-pull-multi').addEventListener('click', () => {
-        if (!isAnimating && currentKarma >= MULTI_PULL_COST) handleMultiPull();
+        if (!isAnimating && currentKarma >= getMultiPullCost()) handleMultiPull();
     });
     
     document.getElementById('lever-container').addEventListener('click', () => {
-        if (!isAnimating && currentKarma >= PULL_COST) handlePull();
+        if (!isAnimating && currentKarma >= getPullCost()) handlePull();
     });
     
     document.getElementById('btn-close').addEventListener('click', () => {
@@ -302,12 +304,12 @@ async function handlePull() {
     updateButtonStates();
     
     // Deduct karma immediately for feel
-    currentKarma -= PULL_COST;
-    spendFn(PULL_COST);
-    updateKarmaDisplay(currentKarma, -PULL_COST);
+    currentKarma -= getPullCost();
+    spendFn(getPullCost());
+    updateKarmaDisplay(currentKarma, -getPullCost());
     
     // Determine result first so we can rig the reels
-    const result = doPull(currentKarma + PULL_COST, () => {}); // Already spent
+    const result = doPull(currentKarma + getPullCost(), () => {}); // Already spent
     
     if (result.success) {
         await animatePull(result.reward.rarity);
@@ -330,11 +332,11 @@ async function handleMultiPull() {
     isAnimating = true;
     updateButtonStates();
     
-    currentKarma -= MULTI_PULL_COST;
-    spendFn(MULTI_PULL_COST);
-    updateKarmaDisplay(currentKarma, -MULTI_PULL_COST);
+    currentKarma -= getMultiPullCost();
+    spendFn(getMultiPullCost());
+    updateKarmaDisplay(currentKarma, -getMultiPullCost());
     
-    const result = doMultiPull(currentKarma + MULTI_PULL_COST, () => {});
+    const result = doMultiPull(currentKarma + getMultiPullCost(), () => {});
     
     if (result.success) {
         await showMultiPullResults(result.results);
@@ -525,7 +527,7 @@ async function showMultiPullResults(results) {
         
         display.innerHTML = `
             <div class="result-card mini ${reward.rarity}" style="--rarity-color: ${rarity.color}; --rarity-glow: ${rarity.glow}">
-                <div class="result-count">${i + 1}/${MULTI_PULL_COUNT}</div>
+                <div class="result-count">${i + 1}/${getMultiPullCount()}</div>
                 <div class="result-icon">${reward.icon}</div>
                 <div class="result-name">${reward.name}</div>
             </div>
@@ -696,8 +698,8 @@ function updateButtonStates() {
     const singleBtn = document.getElementById('btn-pull-single');
     const multiBtn = document.getElementById('btn-pull-multi');
     
-    const canSingle = currentKarma >= PULL_COST && !isAnimating;
-    const canMulti = currentKarma >= MULTI_PULL_COST && !isAnimating;
+    const canSingle = currentKarma >= getPullCost() && !isAnimating;
+    const canMulti = currentKarma >= getMultiPullCost() && !isAnimating;
     
     singleBtn.disabled = !canSingle;
     multiBtn.disabled = !canMulti;
