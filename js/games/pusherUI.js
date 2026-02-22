@@ -675,6 +675,7 @@ function updateDebugOverlay() {
  * @param {PusherGame} game - Game instance
  */
 function render(game) {
+    try {
     const platform = game.getPlatform();
     const pusherBar = game.getPusherBar();
     const pusherWidth = game.getPusherWidth();
@@ -819,6 +820,12 @@ function render(game) {
     }
     
     ctx.restore();
+    } catch (e) {
+        console.error('Render error:', e);
+        ctx.fillStyle = '#f00';
+        ctx.font = '14px monospace';
+        ctx.fillText('RENDER ERROR: ' + e.message, 10, 50);
+    }
 }
 
 /**
@@ -843,7 +850,12 @@ function drawPusher3D(pusherX, pusherBar, pusherWidth, isMegaPush) {
     ctx.fillStyle = pusherGrad;
     
     ctx.beginPath();
-    ctx.roundRect(pusherX, barY, pusherWidth, barHeight, 4);
+    // Fallback for browsers without roundRect
+    if (ctx.roundRect) {
+        ctx.roundRect(pusherX, barY, pusherWidth, barHeight, 4);
+    } else {
+        ctx.rect(pusherX, barY, pusherWidth, barHeight);
+    }
     ctx.fill();
     
     ctx.shadowBlur = 0;
