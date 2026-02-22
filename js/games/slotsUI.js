@@ -121,24 +121,29 @@ export function showGachaMachine(karma, spendKarmaFn, addKarmaFn, onClose) {
             
             <div class="gacha-footer">
                 <button class="gacha-btn-secondary" id="btn-inventory">📦 Inventory</button>
-                <button class="gacha-btn-secondary" id="btn-close">Back to Hub</button>
+                <button class="gacha-btn-secondary" id="btn-close">Close</button>
+                <button class="gacha-btn-secondary debug-toggle" id="btn-debug-toggle" style="display: none;">🔧</button>
             </div>
             
-            <div class="gacha-debug" id="gacha-debug" style="display: none;">
-                <div class="debug-title">🔧 Debug Controls</div>
-                <div class="debug-row">
-                    <button class="debug-btn" data-rarity="common">Common</button>
-                    <button class="debug-btn" data-rarity="uncommon">Uncommon</button>
-                    <button class="debug-btn" data-rarity="rare">Rare</button>
-                    <button class="debug-btn" data-rarity="epic">Epic</button>
-                    <button class="debug-btn" data-rarity="legendary">Legendary</button>
+            <!-- Debug Modal -->
+            <div class="debug-modal-overlay" id="debug-modal" style="display: none;">
+                <div class="debug-modal">
+                    <div class="debug-title">🔧 Debug Controls</div>
+                    <div class="debug-row">
+                        <button class="debug-btn" data-rarity="common">Common</button>
+                        <button class="debug-btn" data-rarity="uncommon">Uncommon</button>
+                        <button class="debug-btn" data-rarity="rare">Rare</button>
+                        <button class="debug-btn" data-rarity="epic">Epic</button>
+                        <button class="debug-btn" data-rarity="legendary">Legendary</button>
+                    </div>
+                    <div class="debug-row">
+                        <button class="debug-btn" id="debug-pity-50">Pity→50</button>
+                        <button class="debug-btn" id="debug-reset">Reset</button>
+                        <button class="debug-btn" id="debug-add-karma">+50 Karma</button>
+                    </div>
+                    <div class="debug-stats" id="debug-stats"></div>
+                    <button class="gacha-btn-secondary" id="btn-debug-close" style="width: 100%; margin-top: 10px;">Close</button>
                 </div>
-                <div class="debug-row">
-                    <button class="debug-btn" id="debug-pity-50">Pity→50</button>
-                    <button class="debug-btn" id="debug-reset">Reset</button>
-                    <button class="debug-btn" id="debug-add-karma">+50 Karma</button>
-                </div>
-                <div class="debug-stats" id="debug-stats"></div>
             </div>
         </div>
         <div class="particle-container" id="particles"></div>
@@ -150,9 +155,25 @@ export function showGachaMachine(karma, spendKarmaFn, addKarmaFn, onClose) {
     bindEvents(onClose);
     
     if (window.debugMode) {
-        document.getElementById('gacha-debug').style.display = 'block';
+        document.getElementById('btn-debug-toggle').style.display = 'inline-block';
         updateDebugStats();
     }
+    
+    // Debug modal toggle
+    document.getElementById('btn-debug-toggle')?.addEventListener('click', () => {
+        document.getElementById('debug-modal').style.display = 'flex';
+        updateDebugStats();
+    });
+    
+    document.getElementById('btn-debug-close')?.addEventListener('click', () => {
+        document.getElementById('debug-modal').style.display = 'none';
+    });
+    
+    document.getElementById('debug-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'debug-modal') {
+            document.getElementById('debug-modal').style.display = 'none';
+        }
+    });
     
     updateButtonStates();
 }

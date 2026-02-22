@@ -759,6 +759,33 @@
 }
 
 /* ============ DEBUG ============ */
+/* Debug toggle button */
+.debug-toggle {
+    padding: 8px 12px !important;
+}
+
+/* Debug modal overlay */
+.debug-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.debug-modal {
+    background: rgba(20, 15, 25, 0.98);
+    border: 2px dashed #f44;
+    border-radius: 16px;
+    padding: 20px;
+    width: 90vw;
+    max-width: 400px;
+    animation: cardReveal 0.2s ease-out;
+}
+
+/* Legacy - keep for backwards compat */
 .gacha-debug {
     margin-top: 18px;
     padding: 12px;
