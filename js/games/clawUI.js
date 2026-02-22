@@ -1,5 +1,8 @@
-// Claw Machine UI - Canvas rendering with juice
-// Side-view claw machine aesthetic
+/**
+ * @fileoverview Claw Machine UI - Canvas rendering with juice
+ * Side-view claw machine aesthetic
+ * @module games/clawUI
+ */
 
 import {
     initClawMachine,
@@ -124,6 +127,19 @@ export function showClawGame(karma, spendKarmaFn, addKarmaFn, onClose) {
                 <button class="claw-btn" id="claw-play">🎮 Play (${getClawCost()}☯)</button>
                 <button class="claw-btn secondary" id="claw-close">Back to Hub</button>
             </div>
+            
+            <div class="claw-debug" id="claw-debug" style="display: none;">
+                <div class="debug-title">🔧 Debug</div>
+                <div class="debug-row">
+                    <button class="debug-btn" data-rarity="common">Grab Common</button>
+                    <button class="debug-btn" data-rarity="rare">Grab Rare</button>
+                    <button class="debug-btn" data-rarity="legendary">Grab Legendary</button>
+                </div>
+                <div class="debug-row">
+                    <button class="debug-btn" id="debug-show-prizes">Show Prizes</button>
+                    <button class="debug-btn" id="debug-100-grip">100% Grip</button>
+                </div>
+            </div>
         </div>
         <div class="particle-container" id="claw-particles"></div>
     `;
@@ -142,6 +158,11 @@ export function showClawGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     
     // Bind events
     bindEvents();
+    
+    // Show debug panel if enabled
+    if (window.debugMode) {
+        document.getElementById('claw-debug').style.display = 'block';
+    }
     updateButtonStates();
 }
 
@@ -181,6 +202,78 @@ function bindEvents() {
         hideClawGame();
         if (onCloseFn) onCloseFn();
     });
+    
+    // Debug bindings
+    document.querySelectorAll('#claw-debug .debug-btn[data-rarity]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleDebugGrab(btn.dataset.rarity);
+        });
+    });
+    
+    document.getElementById('debug-show-prizes')?.addEventListener('click', () => {
+        // Show prize locations with labels
+        const state = getClawState();
+        console.table(state.prizes.map(p => ({
+            x: Math.round(p.x),
+            y: Math.round(p.y),
+            rarity: p.rarity,
+            name: p.reward.name
+        })));
+        alert(`${state.prizes.length} prizes logged to console`);
+    });
+    
+    document.getElementById('debug-100-grip')?.addEventListener('click', () => {
+        window._clawDebug100Grip = !window._clawDebug100Grip;
+        const btn = document.getElementById('debug-100-grip');
+        if (btn) btn.textContent = window._clawDebug100Grip ? '100% Grip ✓' : '100% Grip';
+    });
+}
+
+/**
+ * Debug: Instantly grab a prize of specific rarity
+ * @param {string} rarity - Target rarity
+ */
+async function handleDebugGrab(rarity) {
+    const state = getClawState();
+    if (state.phase !== 'idle' && state.phase !== 'result') return;
+    
+    // Find prize of target rarity
+    const targetPrize = state.prizes.find(p => p.rarity === rarity);
+    if (!targetPrize) {
+        alert(`No ${rarity} prize in machine!`);
+        return;
+    }
+    
+    // Start game and immediately win with that prize
+    resetClaw(CANVAS_WIDTH);
+    
+    // Simulate win
+    playWinSound(rarity);
+    shakeScreen(document.querySelector('.claw-game'));
+    screenFlash(RARITY_COLORS[rarity]?.color || '#fff', 0.3);
+    
+    const particles = document.getElementById('claw-particles');
+    if (rarity === 'legendary' || rarity === 'epic') {
+        spawnFireworks(RARITY_COLORS[rarity].color, particles);
+    } else {
+        spawnParticles(RARITY_COLORS[rarity].color, 25, particles);
+    }
+    
+    // Apply reward
+    applyReward(targetPrize.reward, (amount) => {
+        currentKarma += amount;
+        addFn(amount);
+    });
+    
+    showResult(true, targetPrize.reward, rarity);
+    
+    // Remove prize from machine
+    const idx = state.prizes.indexOf(targetPrize);
+    if (idx > -1) state.prizes.splice(idx, 1);
+    
+    await sleep(500);
+    updateKarmaLocal(currentKarma, targetPrize.reward.type === 'karma' ? targetPrize.reward.value : 0);
+    updateButtonStates();
 }
 
 function handleKeyDown(e) {

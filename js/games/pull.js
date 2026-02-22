@@ -1,5 +1,8 @@
-// Pull Game Logic - Single dramatic card reveal
-// Uses shared gacha pools and costs from gacha.js
+/**
+ * @fileoverview Pull Game Logic - Single dramatic card reveal
+ * Uses shared gacha pools and costs from gacha.js
+ * @module games/pull
+ */
 
 import { 
     RARITIES, 

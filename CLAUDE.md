@@ -2,6 +2,12 @@
 
 A systemic life simulation game modeling how outcomes emerge from birth circumstances, institutions, and cumulative choices.
 
+## Quick Links
+
+- **Play:** `python -m http.server 8000` then open `http://localhost:8000`
+- **QA Dashboard:** `http://localhost:8000/qa.html` (debug mode always on)
+- **Test Runner:** `http://localhost:8000/tests/runner.html`
+
 ## Core Concepts
 
 The game simulates:
@@ -336,3 +342,215 @@ The debug panel (click DBG) provides:
 
 Run locally with: `python -m http.server 8000`
 Open: `http://localhost:8000`
+
+---
+
+## Mini-Games Architecture
+
+### Overview
+
+The game includes 7 karma-spending mini-games accessible via the Game Hub after completing a life. Each game has its own UI file and logic file.
+
+### File Structure
+
+```
+js/games/
+  shared.js       - Common utilities (audio, particles, animations, colors)
+  gameHub.js      - Central menu, game registration, karma flow
+  slots.js        - Slot machine logic
+  slotsUI.js      - Slot machine UI
+  pull.js         - Card pull logic
+  pullUI.js       - Card pull UI
+  wheel.js        - Wheel of fortune logic
+  wheelUI.js      - Wheel UI
+  plinko.js       - Plinko logic
+  plinkoUI.js     - Plinko UI (canvas-based)
+  scratch.js      - Scratch card logic
+  scratchUI.js    - Scratch card UI (canvas-based)
+  claw.js         - Claw machine logic
+  clawUI.js       - Claw machine UI (canvas-based)
+  pusher.js       - Coin pusher logic
+  pusherUI.js     - Coin pusher UI (canvas-based)
+```
+
+### Game Hub Integration
+
+All games follow the same interface pattern:
+
+```javascript
+showGameXXX(
+    currentKarma,           // Current karma balance
+    spendKarmaFn,          // (amount) => void - deduct karma
+    addKarmaFn,            // (amount) => void - add karma
+    onCloseFn              // () => void - called when game closes
+);
+
+hideGameXXX();             // Clean up and remove UI
+```
+
+### shared.js Exports
+
+| Category | Functions |
+|----------|-----------|
+| **Audio** | `initAudio()`, `playTick()`, `playReelStop()`, `playWinSound()`, `playNearMiss()`, `playChime()`, `playLossSound()`, `playMotorSound()`, `playScratchSound()` |
+| **Particles** | `spawnParticles()`, `spawnFireworks()` |
+| **Screen Effects** | `screenFlash()`, `shakeScreen()` |
+| **Animation** | `sleep()`, `animateNumberChange()`, `easeOutCubic()`, `easeInOutCubic()` |
+| **UI** | `updateKarmaDisplay()`, `createGameOverlay()`, `closeOverlay()` |
+| **Colors** | `RARITY_COLORS`, `lightenColor()`, `darkenColor()`, `hexToRgba()` |
+| **Random** | `randomInt()`, `randomPick()`, `shuffle()`, `clamp()` |
+| **Debug** | `isDebugMode()` |
+
+### Karma Flow
+
+1. Player opens Game Hub with current karma balance
+2. Hub tracks `currentKarma` internally
+3. When spending: calls `spendKarmaFn(amount)` AND decrements `currentKarma`
+4. When winning: calls `addKarmaFn(amount)` AND increments `currentKarma`
+5. On close: Hub shows updated karma in the summary screen
+
+### Adding a New Game
+
+1. Create `newgame.js` (logic) and `newgameUI.js` (UI)
+2. Export `showNewGame(karma, spendFn, addFn, onClose)` and `hideNewGame()`
+3. Import in `gameHub.js`
+4. Add to `GAMES` array with id, name, icon, description, minKarma, launch function
+5. Add launch function that hides hub and shows game
+6. Add `hideNewGame()` to `hideAllGames()` function
+
+---
+
+## Test Framework
+
+### Running Tests
+
+1. Start local server: `python -m http.server 8000`
+2. Open: `http://localhost:8000/tests/runner.html`
+3. Click "Run All Tests"
+
+### Writing Tests
+
+Tests use a Jest-like API (no npm required):
+
+```javascript
+describe('Suite Name', () => {
+    let setupValue;
+
+    beforeEach(() => {
+        setupValue = createFreshState();
+    });
+
+    afterEach(() => {
+        cleanup();
+    });
+
+    it('should do something', () => {
+        expect(result).toBe(expected);
+        expect(array).toContain(item);
+        expect(obj).toHaveProperty('key');
+    });
+
+    it('should work async', async () => {
+        const result = await asyncOperation();
+        expect(result).toBeTruthy();
+    });
+
+    it.skip('skip this test', () => {
+        // Won't run
+    });
+});
+```
+
+### Available Matchers
+
+- `toBe(value)` - Strict equality
+- `toEqual(value)` - Deep equality
+- `toBeTruthy()` / `toBeFalsy()`
+- `toBeNull()` / `toBeUndefined()` / `toBeDefined()`
+- `toContain(value)` - Array/string contains
+- `toHaveLength(n)` - Array/string length
+- `toHaveProperty(key)` - Object has property
+- `toBeGreaterThan(n)` / `toBeLessThan(n)`
+- `toMatch(regex)` - String matches regex
+- `toThrow([message])` - Function throws
+- `.not.*` - Negate any matcher
+
+### Mock Utilities
+
+```javascript
+// Create mock function
+const fn = TestFramework.mock();
+fn.mockReturnValue(42);
+fn(1, 2, 3);
+expect(fn.calls[0]).toEqual([1, 2, 3]);
+
+// Create mock localStorage
+const storage = TestFramework.createMockStorage();
+storage.setItem('key', 'value');
+expect(storage.getItem('key')).toBe('value');
+```
+
+### Test Files
+
+| File | Purpose |
+|------|---------|
+| `tests/framework.js` | Test framework implementation |
+| `tests/runner.html` | Browser-based test runner UI |
+| `tests/integration.test.js` | Integration tests for karma, hub, state |
+
+---
+
+## QA Dashboard
+
+### Purpose
+
+The QA Dashboard (`qa.html`) provides a centralized place for testing and debugging:
+
+- **Debug mode always on** - No need to toggle
+- **Direct game launching** - Open any game directly
+- **Karma controls** - Quick +/- buttons, reset, max
+- **State inspection** - View localStorage state
+- **Quick actions** - Unlock all, reset, export
+
+### Features
+
+| Section | Description |
+|---------|-------------|
+| Karma Controls | Adjust karma (-10, -1, reset, +1, +10, max) |
+| Quick Actions | Unlock All, Reset Unlocks, Full Reset, Clear Logs |
+| State Inspector | View Karma, Unlocks, Tracking, Gacha state as JSON |
+| Game Grid | Click to launch any game in new tab |
+| Tabs | Switch between Games, Main Game iframe, Tests iframe |
+| Activity Log | Real-time log of QA actions |
+
+### Usage
+
+1. Start server: `python -m http.server 8000`
+2. Open: `http://localhost:8000/qa.html`
+3. Use karma controls to set up test conditions
+4. Click any game card to launch it
+5. Use state inspector to verify localStorage
+
+---
+
+## Debug Tools Summary
+
+| Tool | Location | Purpose |
+|------|----------|---------|
+| Debug Panel | Main game (DBG button) | In-game debugging |
+| QA Dashboard | `/qa.html` | Comprehensive testing dashboard |
+| Test Runner | `/tests/runner.html` | Automated tests |
+| Console | Browser DevTools | JS debugging |
+
+### Debug Mode Activation
+
+- **Main game:** Click "DBG" button in corner
+- **QA Dashboard:** Always enabled
+- **URL parameter:** Add `?debug=true` to any URL
+- **Code:** Set `window.debugMode = true`
+
+### Game-Specific Debug
+
+When debug mode is enabled in games:
+- **Slots/Pull:** Force specific rarity, set pity, add karma
+- **All games:** Check `window.debugMode` for conditional features

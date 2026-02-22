@@ -2,14 +2,42 @@
 // Coin pusher physics, upgrades, special events
 
 const PUSHER_KEY = 'karma_simulator_pusher';
-const UPGRADES_KEY = 'karma_simulator_pusher_upgrades';
 
-// Base physics constants
-const BASE_GRAVITY = 0.3;
-const BASE_FRICTION = 0.85;
-const BASE_BOUNCE = 0.4;
+/**
+ * Physics constants - can be tuned via debug tools
+ * @type {Object}
+ */
+export const PHYSICS = {
+    gravity: 0.3,
+    friction: 0.85,
+    bounce: 0.4,
+    maxVelocity: 15,        // Cap velocity to prevent tunneling
+    settleThresholdVX: 0.1,
+    settleThresholdVY: 0.3,
+    settleFrames: 30,
+    collisionDamping: 0.5
+};
 
-// Upgrade definitions
+/**
+ * @typedef {Object} UpgradeLevel
+ * @property {number} cost - Karma cost to unlock
+ * @property {number} value - Gameplay value at this level
+ * @property {string} label - Display label
+ */
+
+/**
+ * @typedef {Object} Upgrade
+ * @property {string} name - Display name
+ * @property {string} icon - Emoji icon
+ * @property {string} description - Help text
+ * @property {UpgradeLevel[]} levels - Available levels
+ */
+
+/**
+ * Upgrade definitions with balanced progression curve
+ * Cost curve: ~2x each level, keeping early game accessible
+ * @type {Object.<string, Upgrade>}
+ */
 export const UPGRADES = {
     platform: {
         name: 'Platform Width',
@@ -68,20 +96,46 @@ export const UPGRADES = {
     }
 };
 
-// Prize definitions
+/**
+ * @typedef {Object} PrizeDef
+ * @property {string} icon - Emoji
+ * @property {number} value - Karma value
+ * @property {string} type - karma|token|jackpot|megajackpot
+ * @property {number} weight - Spawn weight (higher = more common)
+ * @property {number} radius - Physics radius
+ * @property {string} color - Glow color
+ */
+
+/**
+ * Prize definitions - weights sum to ~100 for easy probability math
+ * @type {Object.<string, PrizeDef>}
+ */
 export const PRIZES = {
-    coin: { icon: '🪙', value: 1, type: 'karma', weight: 65, radius: 10, color: '#fbbf24' },
-    smallGem: { icon: '💠', value: 2, type: 'karma', weight: 12, radius: 11, color: '#60a5fa' },
-    token: { icon: '🎫', value: 3, type: 'token', weight: 8, radius: 12, color: '#4ade80' },
-    mediumGem: { icon: '💎', value: 5, type: 'karma', weight: 6, radius: 13, color: '#c084fc' },
-    star: { icon: '⭐', value: 8, type: 'karma', weight: 4, radius: 14, color: '#fbbf24' },
-    trophy: { icon: '🏆', value: 12, type: 'karma', weight: 2.5, radius: 15, color: '#fbbf24' },
-    crystal: { icon: '🔮', value: 20, type: 'karma', weight: 1.5, radius: 16, color: '#c084fc' },
-    jackpot: { icon: '🌟', value: 50, type: 'jackpot', weight: 0.5, radius: 18, color: '#fbbf24' },
-    megaJackpot: { icon: '👑', value: 100, type: 'megajackpot', weight: 0.2, radius: 20, color: '#fbbf24' }
+    coin:       { icon: '🪙', value: 1,   type: 'karma',       weight: 65,   radius: 10, color: '#fbbf24' },
+    smallGem:   { icon: '💠', value: 2,   type: 'karma',       weight: 12,   radius: 11, color: '#60a5fa' },
+    token:      { icon: '🎫', value: 3,   type: 'token',       weight: 8,    radius: 12, color: '#4ade80' },
+    mediumGem:  { icon: '💎', value: 5,   type: 'karma',       weight: 6,    radius: 13, color: '#c084fc' },
+    star:       { icon: '⭐', value: 8,   type: 'karma',       weight: 4,    radius: 14, color: '#fbbf24' },
+    trophy:     { icon: '🏆', value: 12,  type: 'karma',       weight: 2.5,  radius: 15, color: '#fbbf24' },
+    crystal:    { icon: '🔮', value: 20,  type: 'karma',       weight: 1.5,  radius: 16, color: '#c084fc' },
+    jackpot:    { icon: '🌟', value: 50,  type: 'jackpot',     weight: 0.5,  radius: 18, color: '#fbbf24' },
+    megaJackpot:{ icon: '👑', value: 100, type: 'megajackpot', weight: 0.2,  radius: 20, color: '#fbbf24' }
 };
 
-// Special events
+// Calculate total weight once
+const TOTAL_PRIZE_WEIGHT = Object.values(PRIZES).reduce((sum, p) => sum + p.weight, 0);
+
+/**
+ * @typedef {Object} SpecialEvent
+ * @property {string} name - Display name with emoji
+ * @property {number} duration - Duration in ms
+ * @property {string} effect - Description of effect
+ */
+
+/**
+ * Special events with balanced durations
+ * @type {Object.<string, SpecialEvent>}
+ */
 export const SPECIAL_EVENTS = {
     goldRush: {
         name: '🌟 GOLD RUSH!',
@@ -105,138 +159,209 @@ export const SPECIAL_EVENTS = {
     }
 };
 
-// Coin/Prize class
+// Event configuration
+const EVENT_CONFIG = {
+    triggerChance: 0.0003,  // Per frame chance (~1.8% per second at 60fps)
+    cooldownMs: 30000,      // 30 seconds between events
+    prizeRainSpawnRate: 0.05 // 5% chance per frame during prize rain
+};
+
+/**
+ * Physics item in the pusher game
+ */
 export class PusherItem {
+    /**
+     * @param {number} x - Initial X position
+     * @param {number} y - Initial Y position
+     * @param {string} type - Prize type key from PRIZES
+     */
     constructor(x, y, type = 'coin') {
         const def = PRIZES[type] || PRIZES.coin;
+        
+        // Position
         this.x = x;
         this.y = y;
+        
+        // Velocity with slight random horizontal spread
         this.vx = (Math.random() - 0.5) * 3;
         this.vy = 0;
+        
+        // Prize properties (copied from definition)
         this.radius = def.radius;
         this.type = type;
         this.icon = def.icon;
         this.value = def.value;
         this.prizeType = def.type;
         this.color = def.color;
+        
+        // State tracking
         this.settled = false;
         this.settleTimer = 0;
+        this.age = 0;
+        
+        // Visual effects
         this.wobble = 0;
         this.wobblePhase = Math.random() * Math.PI * 2;
         this.flash = 0;
         this.glow = 0;
-        this.age = 0;
     }
 
+    /**
+     * Update physics for this item
+     * @param {PusherItem[]} items - All items for collision
+     * @param {number} pusherX - Pusher bar X position
+     * @param {number} pusherWidth - Pusher bar width
+     * @param {Object} platform - Platform bounds
+     * @param {Object} pusherBar - Pusher bar bounds
+     * @param {number} pusherSpeed - Current pusher speed
+     * @param {boolean} frenzyMode - Is frenzy event active
+     * @returns {boolean} True if item has fallen off the edge
+     */
     update(items, pusherX, pusherWidth, platform, pusherBar, pusherSpeed, frenzyMode) {
         this.age++;
+        
+        // Decay visual effects
         if (this.flash > 0) this.flash -= 0.08;
         if (this.glow > 0) this.glow -= 0.02;
         
         const speed = frenzyMode ? 1.5 : 1;
-        const gravity = BASE_GRAVITY * speed;
-        const friction = BASE_FRICTION;
+        const gravity = PHYSICS.gravity * speed;
         
         // Apply gravity
         this.vy += gravity;
+        
+        // Clamp velocity to prevent tunneling
+        this.vx = Math.max(-PHYSICS.maxVelocity, Math.min(PHYSICS.maxVelocity, this.vx));
+        this.vy = Math.max(-PHYSICS.maxVelocity, Math.min(PHYSICS.maxVelocity, this.vy));
         
         // Apply velocity
         this.x += this.vx * speed;
         this.y += this.vy * speed;
         
-        // Friction
-        this.vx *= friction;
+        // Apply friction
+        this.vx *= PHYSICS.friction;
         
-        // Platform boundaries (walls)
-        if (this.x - this.radius < platform.x) {
-            this.x = platform.x + this.radius;
-            this.vx = Math.abs(this.vx) * BASE_BOUNCE;
-        }
-        if (this.x + this.radius > platform.x + platform.width) {
-            this.x = platform.x + platform.width - this.radius;
-            this.vx = -Math.abs(this.vx) * BASE_BOUNCE;
+        // Wall collisions (left/right platform boundaries)
+        const leftWall = platform.x + this.radius;
+        const rightWall = platform.x + platform.width - this.radius;
+        
+        if (this.x < leftWall) {
+            this.x = leftWall;
+            this.vx = Math.abs(this.vx) * PHYSICS.bounce;
+        } else if (this.x > rightWall) {
+            this.x = rightWall;
+            this.vx = -Math.abs(this.vx) * PHYSICS.bounce;
         }
         
         // Pusher bar collision
-        if (this.y + this.radius > pusherBar.y && 
-            this.y - this.radius < pusherBar.y + pusherBar.height &&
+        const pusherRight = pusherX + pusherWidth;
+        const pusherTop = pusherBar.y;
+        const pusherBottom = pusherBar.y + pusherBar.height;
+        
+        if (this.y + this.radius > pusherTop && 
+            this.y - this.radius < pusherBottom &&
             this.x > pusherX && 
-            this.x < pusherX + pusherWidth) {
-            // Push forward
+            this.x < pusherRight) {
+            // Push forward and up
             this.vy = -Math.abs(this.vy) * 0.3;
             this.vx += pusherSpeed * 0.6;
-            this.y = pusherBar.y - this.radius;
+            this.y = pusherTop - this.radius;
             this.flash = 1;
             this.glow = 1;
         }
         
-        // Platform floor
-        if (this.y + this.radius > platform.edgeY - 15) {
-            if (this.y < platform.edgeY + 10) {
-                this.y = platform.edgeY - 15 - this.radius;
-                this.vy = -Math.abs(this.vy) * BASE_BOUNCE;
-                if (Math.abs(this.vy) < 0.5) this.vy = 0;
-            }
+        // Platform floor collision (but allow falling off edge)
+        const floorY = platform.edgeY - 15;
+        if (this.y + this.radius > floorY && this.y < platform.edgeY + 10) {
+            this.y = floorY - this.radius;
+            this.vy = -Math.abs(this.vy) * PHYSICS.bounce;
+            if (Math.abs(this.vy) < 0.5) this.vy = 0;
         }
         
-        // Collision with other items
-        for (const other of items) {
-            if (other === this) continue;
-            const dx = other.x - this.x;
-            const dy = other.y - this.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = this.radius + other.radius;
-            
-            if (dist < minDist && dist > 0) {
-                const overlap = (minDist - dist) / 2;
-                const nx = dx / dist;
-                const ny = dy / dist;
-                
-                this.x -= nx * overlap;
-                this.y -= ny * overlap;
-                other.x += nx * overlap;
-                other.y += ny * overlap;
-                
-                const dvx = this.vx - other.vx;
-                const dvy = this.vy - other.vy;
-                const dot = dvx * nx + dvy * ny;
-                
-                this.vx -= dot * nx * 0.5;
-                this.vy -= dot * ny * 0.5;
-                other.vx += dot * nx * 0.5;
-                other.vy += dot * ny * 0.5;
-                
-                // Small flash on collision
-                if (Math.abs(dot) > 1) {
-                    this.flash = Math.min(this.flash + 0.3, 1);
-                }
-            }
-        }
+        // Item-to-item collisions
+        this.handleItemCollisions(items);
         
-        // Check if settled
-        if (Math.abs(this.vx) < 0.1 && Math.abs(this.vy) < 0.3) {
+        // Check if settled (not moving much)
+        if (Math.abs(this.vx) < PHYSICS.settleThresholdVX && 
+            Math.abs(this.vy) < PHYSICS.settleThresholdVY) {
             this.settleTimer++;
-            if (this.settleTimer > 30) this.settled = true;
+            if (this.settleTimer > PHYSICS.settleFrames) {
+                this.settled = true;
+            }
         } else {
             this.settleTimer = 0;
             this.settled = false;
         }
         
-        // Wobble near edge (tension!)
+        // Wobble animation near edge (builds tension!)
         if (this.y + this.radius > platform.edgeY - 35) {
             this.wobble = Math.sin(Date.now() / 80 + this.wobblePhase) * 2.5;
         } else {
             this.wobble *= 0.9;
         }
         
-        // Check if fallen off
+        // Return true if fallen off (collected!)
         return this.y > platform.edgeY + 50;
     }
 
+    /**
+     * Handle collisions with other items
+     * @param {PusherItem[]} items - All items to check
+     */
+    handleItemCollisions(items) {
+        for (const other of items) {
+            if (other === this) continue;
+            
+            const dx = other.x - this.x;
+            const dy = other.y - this.y;
+            const distSq = dx * dx + dy * dy;
+            const minDist = this.radius + other.radius;
+            
+            // Early exit if not colliding
+            if (distSq >= minDist * minDist || distSq === 0) continue;
+            
+            const dist = Math.sqrt(distSq);
+            const overlap = (minDist - dist) / 2;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            
+            // Separate items
+            this.x -= nx * overlap;
+            this.y -= ny * overlap;
+            other.x += nx * overlap;
+            other.y += ny * overlap;
+            
+            // Exchange velocity along collision normal
+            const dvx = this.vx - other.vx;
+            const dvy = this.vy - other.vy;
+            const dot = dvx * nx + dvy * ny;
+            
+            const damping = PHYSICS.collisionDamping;
+            this.vx -= dot * nx * damping;
+            this.vy -= dot * ny * damping;
+            other.vx += dot * nx * damping;
+            other.vy += dot * ny * damping;
+            
+            // Small flash on significant collision
+            if (Math.abs(dot) > 1) {
+                this.flash = Math.min(this.flash + 0.3, 1);
+            }
+        }
+    }
+
+    /**
+     * Serialize for localStorage
+     * @returns {Object}
+     */
     serialize() {
         return { x: this.x, y: this.y, type: this.type };
     }
 
+    /**
+     * Deserialize from saved data
+     * @param {Object} data - Serialized item
+     * @returns {PusherItem}
+     */
     static deserialize(data) {
         const item = new PusherItem(data.x, data.y, data.type);
         item.settled = true;
@@ -246,14 +371,29 @@ export class PusherItem {
     }
 }
 
-// Main Pusher Game State
+/**
+ * Main Pusher Game State Manager
+ */
 export class PusherGame {
     constructor() {
+        /** @type {PusherItem[]} */
         this.items = [];
+        
+        // Pusher state
         this.pusherX = 0;
         this.pusherDirection = 1;
-        this.pusherExtension = 0; // For mega push
-        this.upgrades = { platform: 0, pusherSpeed: 0, prizeQuality: 0, multiDrop: 0, autoDrop: 0 };
+        this.pusherExtension = 0;
+        
+        // Upgrades (level indices)
+        this.upgrades = { 
+            platform: 0, 
+            pusherSpeed: 0, 
+            prizeQuality: 0, 
+            multiDrop: 0, 
+            autoDrop: 0 
+        };
+        
+        // Statistics
         this.stats = {
             coinsDropped: 0,
             prizesCollected: 0,
@@ -263,21 +403,30 @@ export class PusherGame {
             bestSingleWin: 0
         };
         
-        // Special events
+        // Event state
         this.activeEvent = null;
         this.eventTimer = 0;
         this.eventCooldown = 0;
         
-        // Auto-drop
+        // Auto-drop timing
         this.lastAutoDrop = 0;
         
         // Combo tracking
         this.combo = 0;
         this.comboTimer = 0;
         
+        // Debug state
+        this.debugMode = false;
+        this.lastFrameTime = performance.now();
+        this.fps = 60;
+        
         this.load();
     }
 
+    /**
+     * Get current platform dimensions
+     * @returns {Object} Platform bounds
+     */
     getPlatform() {
         const width = UPGRADES.platform.levels[this.upgrades.platform].value;
         return {
@@ -288,6 +437,10 @@ export class PusherGame {
         };
     }
 
+    /**
+     * Get pusher bar dimensions
+     * @returns {Object} Pusher bar bounds
+     */
     getPusherBar() {
         const platform = this.getPlatform();
         return {
@@ -298,25 +451,52 @@ export class PusherGame {
         };
     }
 
+    /**
+     * Get current pusher speed (affected by upgrades and events)
+     * @returns {number}
+     */
     getPusherSpeed() {
         const base = UPGRADES.pusherSpeed.levels[this.upgrades.pusherSpeed].value;
         return this.activeEvent?.type === 'frenzy' ? base * 1.5 : base;
     }
 
+    /**
+     * Get current pusher width (affected by events)
+     * @returns {number}
+     */
     getPusherWidth() {
         return 110 + (this.activeEvent?.type === 'megaPush' ? 40 : 0);
     }
 
+    /**
+     * Get multi-drop count from upgrade
+     * @returns {number}
+     */
     getMultiDropCount() {
         return UPGRADES.multiDrop.levels[this.upgrades.multiDrop].value;
     }
 
+    /**
+     * Main game update loop
+     * @param {number} currentKarma - Player's current karma
+     * @param {Function} addKarmaFn - Callback to add karma
+     * @returns {Object} Update result with fallen items and auto-drop flag
+     */
     update(currentKarma, addKarmaFn) {
+        // FPS tracking for debug
+        const now = performance.now();
+        const delta = now - this.lastFrameTime;
+        this.fps = 0.9 * this.fps + 0.1 * (1000 / Math.max(delta, 1));
+        this.lastFrameTime = now;
+        
         const platform = this.getPlatform();
         const pusherBar = this.getPusherBar();
         const speed = this.getPusherSpeed();
         const pusherWidth = this.getPusherWidth();
         const frenzyMode = this.activeEvent?.type === 'frenzy';
+        
+        // Mega push extension
+        this.pusherExtension = this.activeEvent?.type === 'megaPush' ? 30 : 0;
         
         // Move pusher bar
         this.pusherX += speed * this.pusherDirection;
@@ -326,15 +506,15 @@ export class PusherGame {
             this.pusherDirection = 1;
         }
         
-        // Prize rain event
-        if (this.activeEvent?.type === 'prizeRain' && Math.random() < 0.05) {
+        // Prize rain event spawning
+        if (this.activeEvent?.type === 'prizeRain' && Math.random() < EVENT_CONFIG.prizeRainSpawnRate) {
             const x = platform.x + 20 + Math.random() * (platform.width - 40);
             this.items.push(new PusherItem(x, platform.y - 30, this.rollPrizeType()));
         }
         
         // Update event timer
         if (this.activeEvent) {
-            this.eventTimer -= 16; // ~60fps
+            this.eventTimer -= 16; // ~60fps assumption
             if (this.eventTimer <= 0) {
                 this.activeEvent = null;
             }
@@ -345,8 +525,8 @@ export class PusherGame {
             this.eventCooldown -= 16;
         }
         
-        // Random event trigger
-        if (!this.activeEvent && this.eventCooldown <= 0 && Math.random() < 0.0003) {
+        // Random event trigger (only if not in event and cooldown expired)
+        if (!this.activeEvent && this.eventCooldown <= 0 && Math.random() < EVENT_CONFIG.triggerChance) {
             this.triggerRandomEvent();
         }
         
@@ -358,17 +538,16 @@ export class PusherGame {
             }
         }
         
-        // Auto-drop
+        // Auto-drop check
         const autoDropInterval = UPGRADES.autoDrop.levels[this.upgrades.autoDrop].value;
         if (autoDropInterval > 0 && currentKarma >= 1) {
-            const now = Date.now();
             if (now - this.lastAutoDrop >= autoDropInterval) {
                 this.lastAutoDrop = now;
-                return { autoDrop: true };
+                return { fallen: [], autoDrop: true };
             }
         }
 
-        // Update all items
+        // Update all items and collect fallen ones
         const fallen = [];
         this.items = this.items.filter(item => {
             const hasFallen = item.update(
@@ -390,23 +569,41 @@ export class PusherGame {
         return { fallen, autoDrop: false };
     }
 
+    /**
+     * Trigger a random special event
+     * @returns {Object} The triggered event
+     */
     triggerRandomEvent() {
         const events = Object.keys(SPECIAL_EVENTS);
         const eventType = events[Math.floor(Math.random() * events.length)];
+        return this.triggerEvent(eventType);
+    }
+
+    /**
+     * Trigger a specific event by type
+     * @param {string} eventType - Event key from SPECIAL_EVENTS
+     * @returns {Object|null} The triggered event or null if invalid
+     */
+    triggerEvent(eventType) {
         const event = SPECIAL_EVENTS[eventType];
+        if (!event) return null;
         
         this.activeEvent = { type: eventType, ...event };
         this.eventTimer = event.duration;
-        this.eventCooldown = 30000; // 30 second cooldown between events
+        this.eventCooldown = EVENT_CONFIG.cooldownMs;
         
         return this.activeEvent;
     }
 
+    /**
+     * Roll for a prize type based on weights and quality bonus
+     * @returns {string} Prize type key
+     */
     rollPrizeType() {
         const qualityBonus = UPGRADES.prizeQuality.levels[this.upgrades.prizeQuality].value;
-        let roll = Math.random() * 100;
+        let roll = Math.random() * TOTAL_PRIZE_WEIGHT;
         
-        // Quality bonus shifts rolls toward better prizes
+        // Quality bonus shifts rolls toward better (rarer) prizes
         roll = Math.max(0, roll - qualityBonus);
         
         let cumulative = 0;
@@ -416,9 +613,15 @@ export class PusherGame {
                 return type;
             }
         }
-        return 'coin';
+        return 'coin'; // Fallback
     }
 
+    /**
+     * Drop a coin/prize at the specified position
+     * @param {number} xPosition - Normalized X position (0-1)
+     * @param {string|null} forcedType - Force a specific prize type
+     * @returns {PusherItem} The dropped item
+     */
     dropCoin(xPosition, forcedType = null) {
         const platform = this.getPlatform();
         const x = platform.x + 15 + xPosition * (platform.width - 30);
@@ -427,6 +630,7 @@ export class PusherGame {
         const type = forcedType || this.rollPrizeType();
         const item = new PusherItem(x, y, type);
         this.items.push(item);
+        
         this.stats.coinsDropped++;
         this.stats.totalPlays++;
         
@@ -434,21 +638,31 @@ export class PusherGame {
         return item;
     }
 
+    /**
+     * Process a collected prize and return rewards
+     * @param {PusherItem} item - The collected item
+     * @returns {Object} Collection result with value, combo, and bonus info
+     */
     collectPrize(item) {
         let value = item.value;
         
         // Gold rush doubles value
-        if (this.activeEvent?.type === 'goldRush') {
+        const isGoldRush = this.activeEvent?.type === 'goldRush';
+        if (isGoldRush) {
             value *= 2;
         }
         
-        // Combo bonus
+        // Combo bonus (10% per combo level, capped at 200%)
         this.combo++;
         this.comboTimer = 2000; // 2 second combo window
+        
+        let comboMultiplier = 1;
         if (this.combo > 1) {
-            value = Math.floor(value * (1 + this.combo * 0.1)); // 10% per combo
+            comboMultiplier = Math.min(1 + this.combo * 0.1, 3); // Cap at 3x
+            value = Math.floor(value * comboMultiplier);
         }
         
+        // Update stats
         this.stats.prizesCollected++;
         this.stats.karmaEarned += value;
         
@@ -462,9 +676,19 @@ export class PusherGame {
         
         this.save();
         
-        return { value, combo: this.combo, isGoldRush: this.activeEvent?.type === 'goldRush' };
+        return { 
+            value, 
+            combo: this.combo, 
+            comboMultiplier,
+            isGoldRush 
+        };
     }
 
+    /**
+     * Check if an upgrade can be purchased
+     * @param {string} upgradeType - Upgrade key
+     * @returns {Object} Purchase info with success status and cost
+     */
     purchaseUpgrade(upgradeType) {
         const currentLevel = this.upgrades[upgradeType] || 0;
         const upgrade = UPGRADES[upgradeType];
@@ -482,11 +706,30 @@ export class PusherGame {
         };
     }
 
+    /**
+     * Apply an upgrade (assumes cost already spent)
+     * @param {string} upgradeType - Upgrade key
+     */
     applyUpgrade(upgradeType) {
         this.upgrades[upgradeType] = (this.upgrades[upgradeType] || 0) + 1;
         this.save();
     }
 
+    /**
+     * Max out all upgrades (debug tool)
+     */
+    maxAllUpgrades() {
+        for (const key of Object.keys(UPGRADES)) {
+            this.upgrades[key] = UPGRADES[key].levels.length - 1;
+        }
+        this.save();
+    }
+
+    /**
+     * Get detailed upgrade info for UI
+     * @param {string} upgradeType - Upgrade key
+     * @returns {Object} Upgrade display info
+     */
     getUpgradeInfo(upgradeType) {
         const currentLevel = this.upgrades[upgradeType] || 0;
         const upgrade = UPGRADES[upgradeType];
@@ -498,12 +741,35 @@ export class PusherGame {
             description: upgrade.description,
             currentLevel,
             currentLabel: upgrade.levels[currentLevel].label,
+            currentValue: upgrade.levels[currentLevel].value,
             nextCost: isMaxed ? null : upgrade.levels[currentLevel + 1].cost,
             nextLabel: isMaxed ? null : upgrade.levels[currentLevel + 1].label,
             isMaxed
         };
     }
 
+    /**
+     * Get debug information
+     * @returns {Object} Debug stats
+     */
+    getDebugInfo() {
+        return {
+            fps: Math.round(this.fps),
+            itemCount: this.items.length,
+            settledCount: this.items.filter(i => i.settled).length,
+            activeEvent: this.activeEvent?.type || 'none',
+            eventTimer: Math.round(this.eventTimer / 1000),
+            eventCooldown: Math.round(this.eventCooldown / 1000),
+            combo: this.combo,
+            comboTimer: Math.round(this.comboTimer / 1000),
+            pusherX: Math.round(this.pusherX),
+            pusherDir: this.pusherDirection > 0 ? '→' : '←'
+        };
+    }
+
+    /**
+     * Save state to localStorage
+     */
     save() {
         try {
             const data = {
@@ -512,12 +778,40 @@ export class PusherGame {
                 stats: this.stats,
                 savedAt: Date.now()
             };
+            const json = JSON.stringify(data);
+            
+            // Check for localStorage quota (rough estimate)
+            if (json.length > 4 * 1024 * 1024) {
+                console.warn('Pusher save data too large, trimming items');
+                // Keep only recent items if too large
+                data.items = data.items.slice(-100);
+            }
+            
             localStorage.setItem(PUSHER_KEY, JSON.stringify(data));
         } catch (e) {
-            console.warn('Failed to save pusher state:', e);
+            if (e.name === 'QuotaExceededError') {
+                console.warn('localStorage full, clearing old pusher data');
+                // Try to save with minimal items
+                try {
+                    const minData = {
+                        items: [],
+                        upgrades: this.upgrades,
+                        stats: this.stats,
+                        savedAt: Date.now()
+                    };
+                    localStorage.setItem(PUSHER_KEY, JSON.stringify(minData));
+                } catch (e2) {
+                    console.error('Failed to save pusher state:', e2);
+                }
+            } else {
+                console.warn('Failed to save pusher state:', e);
+            }
         }
     }
 
+    /**
+     * Load state from localStorage
+     */
     load() {
         try {
             const saved = localStorage.getItem(PUSHER_KEY);
@@ -526,6 +820,9 @@ export class PusherGame {
                 this.items = (data.items || []).map(i => PusherItem.deserialize(i));
                 this.upgrades = { ...this.upgrades, ...data.upgrades };
                 this.stats = { ...this.stats, ...data.stats };
+                
+                // Clamp karma stats to non-negative
+                this.stats.karmaEarned = Math.max(0, this.stats.karmaEarned);
                 
                 // Initialize pusher position
                 const pusherBar = this.getPusherBar();
@@ -539,8 +836,12 @@ export class PusherGame {
         }
     }
 
+    /**
+     * Initialize a fresh board with starter items
+     */
     initializeBoard() {
         const platform = this.getPlatform();
+        this.items = [];
         
         // Start with a spread of coins
         for (let i = 0; i < 30; i++) {
@@ -554,11 +855,11 @@ export class PusherGame {
         }
         
         // Add some starter prizes
+        const starterTypes = ['smallGem', 'token', 'mediumGem'];
         for (let i = 0; i < 3; i++) {
             const x = platform.x + 40 + Math.random() * (platform.width - 80);
             const y = platform.y + 50 + Math.random() * 80;
-            const types = ['smallGem', 'token', 'mediumGem'];
-            const item = new PusherItem(x, y, types[i]);
+            const item = new PusherItem(x, y, starterTypes[i]);
             item.settled = true;
             item.vy = 0;
             item.vx = 0;
@@ -569,6 +870,9 @@ export class PusherGame {
         this.save();
     }
 
+    /**
+     * Soft reset (keep upgrades)
+     */
     reset() {
         this.items = [];
         this.stats = {
@@ -579,19 +883,53 @@ export class PusherGame {
             totalPlays: 0,
             bestSingleWin: 0
         };
-        // Keep upgrades on reset
+        this.activeEvent = null;
+        this.eventTimer = 0;
+        this.eventCooldown = 0;
+        this.combo = 0;
+        this.comboTimer = 0;
         this.initializeBoard();
     }
 
+    /**
+     * Full reset (including upgrades)
+     */
     fullReset() {
         this.upgrades = { platform: 0, pusherSpeed: 0, prizeQuality: 0, multiDrop: 0, autoDrop: 0 };
         this.reset();
+    }
+
+    /**
+     * Clear all items (debug tool)
+     */
+    clearItems() {
+        this.items = [];
+        this.save();
+    }
+
+    /**
+     * Spawn test items (debug tool)
+     * @param {number} count - Number of items to spawn
+     * @param {string} type - Prize type (optional)
+     */
+    spawnTestItems(count = 50, type = null) {
+        const platform = this.getPlatform();
+        for (let i = 0; i < count; i++) {
+            const x = platform.x + 20 + Math.random() * (platform.width - 40);
+            const y = platform.y - 40 - Math.random() * 50;
+            const itemType = type || this.rollPrizeType();
+            this.items.push(new PusherItem(x, y, itemType));
+        }
     }
 }
 
 // Singleton instance
 let pusherInstance = null;
 
+/**
+ * Get the singleton pusher game instance
+ * @returns {PusherGame}
+ */
 export function getPusherGame() {
     if (!pusherInstance) {
         pusherInstance = new PusherGame();
@@ -599,8 +937,27 @@ export function getPusherGame() {
     return pusherInstance;
 }
 
+/**
+ * Reset the pusher game (soft reset)
+ */
 export function resetPusherGame() {
     if (pusherInstance) {
         pusherInstance.reset();
     }
+}
+
+/**
+ * Get the physics constants (for tuning UI)
+ * @returns {Object}
+ */
+export function getPhysics() {
+    return PHYSICS;
+}
+
+/**
+ * Update physics constants
+ * @param {Object} newPhysics - Partial physics object to merge
+ */
+export function setPhysics(newPhysics) {
+    Object.assign(PHYSICS, newPhysics);
 }

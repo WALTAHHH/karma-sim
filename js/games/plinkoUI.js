@@ -1,5 +1,8 @@
-// Plinko UI - Canvas rendering with juice
-// Uses shared.js for common utilities
+/**
+ * @fileoverview Plinko UI - Canvas rendering with juice
+ * Uses shared.js for common utilities
+ * @module games/plinkoUI
+ */
 
 import {
     initPlinkoBoard,
@@ -107,6 +110,16 @@ export function showPlinkoGame(karma, spendKarmaFn, addKarmaFn, onClose) {
                 <button class="plinko-btn" id="plinko-random">🎲 Random Drop (${getPlinkoCost()}☯)</button>
                 <button class="plinko-btn secondary" id="plinko-close">Back to Hub</button>
             </div>
+            
+            <div class="plinko-debug" id="plinko-debug" style="display: none;">
+                <div class="debug-title">🔧 Debug</div>
+                <div class="debug-row">
+                    <button class="debug-btn" data-mult="10">10× (Edge)</button>
+                    <button class="debug-btn" data-mult="5">5×</button>
+                    <button class="debug-btn" data-mult="0">0× (Bust)</button>
+                </div>
+                <div class="debug-stats" id="plinko-debug-stats"></div>
+            </div>
         </div>
         <div class="particle-container" id="plinko-particles"></div>
     `;
@@ -125,6 +138,11 @@ export function showPlinkoGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     
     // Bind events
     bindEvents(onClose);
+    
+    // Show debug panel if enabled
+    if (window.debugMode) {
+        document.getElementById('plinko-debug').style.display = 'block';
+    }
     updateButtonStates();
 }
 
@@ -153,6 +171,101 @@ function bindEvents(onClose) {
         hidePlinkoGame();
         if (onClose) onClose();
     });
+    
+    // Debug: Force drop to specific multiplier slot
+    document.querySelectorAll('#plinko-debug .debug-btn[data-mult]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetMult = parseFloat(btn.dataset.mult);
+            handleDebugDrop(targetMult);
+        });
+    });
+}
+
+/**
+ * Debug drop that lands on a specific multiplier
+ * @param {number} targetMult - Target multiplier to land on
+ */
+async function handleDebugDrop(targetMult) {
+    if (isDropping) return;
+    
+    isDropping = true;
+    updateButtonStates();
+    document.getElementById('plinko-result').classList.remove('show');
+    
+    // Reset visual states
+    pegFlashes.clear();
+    slotGlows.clear();
+    boardData.slots.forEach(slot => slot.lit = false);
+    
+    // Find slot with target multiplier
+    const targetSlot = boardData.slots.find(s => s.multiplier === targetMult);
+    if (!targetSlot) {
+        console.warn('No slot with multiplier', targetMult);
+        isDropping = false;
+        return;
+    }
+    
+    // Animate ball falling to target slot
+    initAudio();
+    playTick(600);
+    
+    // Create ball at slot position (skip physics, just animate down)
+    const ball = { x: targetSlot.x, y: 15, radius: 8 };
+    const targetY = CANVAS_HEIGHT - 100;
+    const duration = 1500;
+    const startTime = performance.now();
+    
+    const animateDebugBall = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 2);
+        
+        // Move ball down with slight wobble
+        ball.y = 15 + (targetY - 15) * eased;
+        ball.x = targetSlot.x + Math.sin(progress * 20) * (1 - progress) * 20;
+        
+        // Hit pegs for sound effects
+        if (Math.random() < 0.15) {
+            playTick(300 + progress * 400);
+        }
+        
+        // Update display (redraw board with ball)
+        if (ctx) {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            drawSlots(boardData.slots);
+            drawPegs(boardData.pegs);
+            
+            // Draw ball
+            const gradient = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, ball.radius * 2);
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(0.6, 'rgba(255, 107, 107, 0.5)');
+            gradient.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius * 2, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fill();
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateDebugBall);
+        } else {
+            // Landing!
+            const result = {
+                slot: targetSlot,
+                multiplier: targetMult,
+                payout: 3 * targetMult
+            };
+            targetSlot.lit = true;
+            handleLanding(targetSlot, result);
+        }
+    };
+    
+    animateDebugBall();
 }
 
 async function handleDrop(dropX) {

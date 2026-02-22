@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karma Simulator - QA Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a12;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .qa-header {
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+            padding: 20px;
+            border-bottom: 2px solid #fbbf24;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .qa-header h1 {
+            font-size: 24px;
+            color: #fbbf24;
+        }
+
+        .qa-header .badge {
+            background: #fbbf24;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .qa-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: calc(100vh - 80px);
+        }
+
+        .qa-sidebar {
+            background: #12121a;
+            border-right: 1px solid #2a2a3a;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .qa-main {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .qa-section {
+            margin-bottom: 25px;
+        }
+
+        .qa-section-title {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #2a2a3a;
+        }
+
+        .qa-karma-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .qa-karma-display .icon {
+            font-size: 36px;
+        }
+
+        .qa-karma-display .value {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .qa-karma-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        button {
+            background: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            color: #e0e0e0;
+            padding: 10px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #3a3a5a;
+            border-color: #5a5a7a;
+        }
+
+        button.primary {
+            background: linear-gradient(180deg, #4ade80, #22c55e);
+            border-color: #22c55e;
+            color: #000;
+            font-weight: bold;
+        }
+
+        button.warning {
+            background: linear-gradient(180deg, #fbbf24, #f59e0b);
+            border-color: #f59e0b;
+            color: #000;
+        }
+
+        button.danger {
+            background: linear-gradient(180deg, #f87171, #ef4444);
+            border-color: #ef4444;
+            color: #000;
+        }
+
+        button.small {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .game-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .game-card:hover {
+            background: #252540;
+            border-color: #4ade80;
+            transform: translateY(-2px);
+        }
+
+        .game-card .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .game-card .name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .game-card .cost {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .state-panel {
+            background: #12121a;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .state-panel pre {
+            white-space: pre-wrap;
+            color: #4ade80;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a2e;
+            border-top: 1px solid #2a2a3a;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .status-bar .left {
+            color: #888;
+        }
+
+        .status-bar .right {
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-item .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .status-item .dot.warning {
+            background: #fbbf24;
+        }
+
+        .status-item .dot.error {
+            background: #f87171;
+        }
+
+        .log-container {
+            background: #0a0a0f;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid #1a1a2a;
+        }
+
+        .log-entry.info { color: #60a5fa; }
+        .log-entry.success { color: #4ade80; }
+        .log-entry.warning { color: #fbbf24; }
+        .log-entry.error { color: #f87171; }
+
+        .timestamp {
+            color: #666;
+            margin-right: 8px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            background: #0a0a12;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: #2a2a4a;
+            border-color: #4ade80;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="qa-header">
+        <h1>🔧 Karma Simulator QA Dashboard</h1>
+        <span class="badge">DEBUG MODE ENABLED</span>
+    </div>
+
+    <div class="qa-container">
+        <div class="qa-sidebar">
+            <!-- Karma Controls -->
+            <div class="qa-section">
+                <div class="qa-section-title">Karma</div>
+                <div class="qa-karma-display">
+                    <span class="icon">☯</span>
+                    <span class="value" id="qa-karma">0</span>
+                </div>
+                <div class="qa-karma-controls">
+                    <button onclick="adjustKarma(-10)">-10</button>
+                    <button onclick="adjustKarma(-1)">-1</button>
+                    <button onclick="setKarma(0)">Reset</button>
+                    <button onclick="adjustKarma(1)">+1</button>
+                    <button onclick="adjustKarma(10)">+10</button>
+                    <button onclick="setKarma(100)" class="warning">Max</button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="qa-section">
+                <div class="qa-section-title">Quick Actions</div>
+                <div class="quick-actions">
+                    <button onclick="unlockAll()" class="primary">Unlock All</button>
+                    <button onclick="resetUnlocks()">Reset Unlocks</button>
+                    <button onclick="resetAll()" class="danger">Full Reset</button>
+                    <button onclick="clearLogs()">Clear Logs</button>
+                </div>
+            </div>
+
+            <!-- State Inspector -->
+            <div class="qa-section">
+                <div class="qa-section-title">State Inspector</div>
+                <div class="quick-actions">
+                    <button onclick="inspectKarma()" class="small">Karma</button>
+                    <button onclick="inspectUnlocks()" class="small">Unlocks</button>
+                    <button onclick="inspectTracking()" class="small">Tracking</button>
+                    <button onclick="inspectGacha()" class="small">Gacha</button>
+                    <button onclick="exportState()" class="small">Export All</button>
+                </div>
+                <div class="state-panel" id="state-output">
+                    <pre>Click a button to inspect state</pre>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="qa-section">
+                <div class="qa-section-title">Activity Log</div>
+                <div class="log-container" id="log-container">
+                    <div class="log-entry info"><span class="timestamp">[--:--:--]</span> QA Dashboard loaded</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-main">
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('games')">🎮 Games</div>
+                <div class="tab" onclick="showTab('main')">🏠 Main Game</div>
+                <div class="tab" onclick="showTab('tests')">🧪 Tests</div>
+            </div>
+
+            <!-- Games Tab -->
+            <div id="tab-games" class="tab-content active">
+                <div class="qa-section">
+                    <div class="qa-section-title">Launch Games Directly</div>
+                    <div class="game-grid">
+                        <div class="game-card" onclick="launchGame('slots')">
+                            <div class="icon">🎰</div>
+                            <div class="name">Karma Slots</div>
+                            <div class="cost">Min: 3☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('pull')">
+                            <div class="icon">🎴</div>
+                            <div class="name">Karma Pull</div>
+                            <div class="cost">Min: 3☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('wheel')">
+                            <div class="icon">🎡</div>
+                            <div class="name">Wheel of Fate</div>
+                            <div class="cost">Min: 3☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('plinko')">
+                            <div class="icon">📍</div>
+                            <div class="name">Karma Plinko</div>
+                            <div class="cost">Min: 3☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('scratch')">
+                            <div class="icon">🎫</div>
+                            <div class="name">Scratch Cards</div>
+                            <div class="cost">Min: 3☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('claw')">
+                            <div class="icon">🎮</div>
+                            <div class="name">Karma Claw</div>
+                            <div class="cost">Min: 5☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('pusher')">
+                            <div class="icon">🪙</div>
+                            <div class="name">Karma Pusher</div>
+                            <div class="cost">Min: 1☯</div>
+                        </div>
+                        <div class="game-card" onclick="launchGame('hub')">
+                            <div class="icon">🎯</div>
+                            <div class="name">Game Hub</div>
+                            <div class="cost">All Games</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Game Tab -->
+            <div id="tab-main" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-section-title">Main Game Preview</div>
+                    <button onclick="openMainGame()">Open Main Game in New Tab</button>
+                    <iframe id="main-frame" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Tests Tab -->
+            <div id="tab-tests" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-section-title">Test Runner</div>
+                    <button onclick="openTests()">Open Test Runner in New Tab</button>
+                    <iframe id="test-frame" src="about:blank"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="left">
+            Karma Simulator QA v1.0 | Debug Mode: <strong>ALWAYS ON</strong>
+        </div>
+        <div class="right">
+            <div class="status-item">
+                <span class="dot" id="storage-status"></span>
+                <span>localStorage</span>
+            </div>
+            <div class="status-item">
+                <span class="dot" id="games-status"></span>
+                <span>7 Games</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enable debug mode globally
+        window.debugMode = true;
+
+        // Storage keys
+        const KEYS = {
+            karma: 'karma_simulator_karma',
+            unlocks: 'karma_simulator_unlocks',
+            tracking: 'karma_simulator_tracking',
+            gacha: 'karma_simulator_gacha',
+            achievements: 'karma_simulator_achievements',
+            tags: 'karma_simulator_tags'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateKarmaDisplay();
+            checkStatus();
+            log('info', 'QA Dashboard initialized');
+        });
+
+        // Karma functions
+        function getKarma() {
+            const stored = localStorage.getItem(KEYS.karma);
+            return stored ? parseInt(stored, 10) : 0;
+        }
+
+        function setKarma(value) {
+            const clamped = Math.max(-100, Math.min(100, value));
+            localStorage.setItem(KEYS.karma, clamped.toString());
+            updateKarmaDisplay();
+            log('success', `Karma set to ${clamped}`);
+        }
+
+        function adjustKarma(delta) {
+            setKarma(getKarma() + delta);
+        }
+
+        function updateKarmaDisplay() {
+            document.getElementById('qa-karma').textContent = getKarma();
+        }
+
+        // Unlock functions
+        function unlockAll() {
+            // Unlock all countries
+            const allCountries = ['UK', 'USA', 'China', 'India', 'Japan', 'Germany', 'France', 
+                'Brazil', 'Nigeria', 'Mexico', 'Indonesia', 'Russia', 'Pakistan', 'Bangladesh',
+                'Ethiopia', 'Egypt', 'Vietnam', 'Iran', 'Turkey', 'Thailand', 'Italy', 'Tanzania',
+                'Myanmar', 'South_Korea', 'Kenya', 'Colombia', 'Spain', 'Argentina', 'Algeria',
+                'Uganda', 'Ukraine', 'Iraq', 'Sudan', 'Afghanistan', 'Poland', 'Canada', 
+                'Morocco', 'Saudi_Arabia', 'Uzbekistan', 'Peru', 'Malaysia', 'Angola', 
+                'Ghana', 'Yemen', 'Nepal', 'Mozambique', 'Australia', 'North_Korea',
+                'Cameroon', 'Taiwan'];
+            
+            const allEras = ['preindustrial', 'industrial_revolution', 'early_modern', 
+                'cold_war', 'contemporary'];
+            
+            const allJobCategories = ['agriculture', 'labor', 'services', 'professional',
+                'creative', 'military', 'maritime', 'religious', 'science', 'commerce',
+                'healthcare', 'law'];
+
+            const unlocks = {
+                countries: allCountries,
+                eras: allEras,
+                jobCategories: allJobCategories,
+                countrySelection: true
+            };
+
+            localStorage.setItem(KEYS.unlocks, JSON.stringify(unlocks));
+            log('success', 'All countries, eras, and job categories unlocked!');
+        }
+
+        function resetUnlocks() {
+            const defaults = {
+                countries: ['UK'],
+                eras: ['contemporary'],
+                jobCategories: ['agriculture', 'labor'],
+                countrySelection: false
+            };
+            localStorage.setItem(KEYS.unlocks, JSON.stringify(defaults));
+            log('warning', 'Unlocks reset to defaults');
+        }
+
+        function resetAll() {
+            if (confirm('This will reset ALL game data. Are you sure?')) {
+                Object.values(KEYS).forEach(key => localStorage.removeItem(key));
+                updateKarmaDisplay();
+                log('error', 'Full game reset performed');
+            }
+        }
+
+        // State inspection
+        function inspectKarma() {
+            const state = {
+                karma: getKarma(),
+                min: -100,
+                max: 100
+            };
+            showState(state);
+        }
+
+        function inspectUnlocks() {
+            const raw = localStorage.getItem(KEYS.unlocks);
+            const state = raw ? JSON.parse(raw) : { message: 'No unlocks saved' };
+            showState(state);
+        }
+
+        function inspectTracking() {
+            const raw = localStorage.getItem(KEYS.tracking);
+            const state = raw ? JSON.parse(raw) : { message: 'No tracking data' };
+            showState(state);
+        }
+
+        function inspectGacha() {
+            const raw = localStorage.getItem(KEYS.gacha);
+            const state = raw ? JSON.parse(raw) : { message: 'No gacha state' };
+            showState(state);
+        }
+
+        function exportState() {
+            const state = {};
+            Object.entries(KEYS).forEach(([name, key]) => {
+                const raw = localStorage.getItem(key);
+                state[name] = raw ? JSON.parse(raw) : null;
+            });
+            showState(state);
+            
+            // Also copy to clipboard
+            navigator.clipboard.writeText(JSON.stringify(state, null, 2))
+                .then(() => log('success', 'State copied to clipboard'));
+        }
+
+        function showState(state) {
+            const output = document.getElementById('state-output');
+            output.innerHTML = `<pre>${JSON.stringify(state, null, 2)}</pre>`;
+        }
+
+        // Game launching
+        function launchGame(gameId) {
+            log('info', `Launching ${gameId}...`);
+            
+            // Open main game with debug mode and specific game
+            const url = `index.html?debug=true&game=${gameId}`;
+            window.open(url, '_blank');
+        }
+
+        function openMainGame() {
+            document.getElementById('main-frame').src = 'index.html?debug=true';
+            log('info', 'Loaded main game in frame');
+        }
+
+        function openTests() {
+            document.getElementById('test-frame').src = 'tests/runner.html';
+            log('info', 'Loaded test runner in frame');
+        }
+
+        // Tab switching
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        // Logging
+        function log(level, message) {
+            const container = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${level}`;
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '';
+            log('info', 'Logs cleared');
+        }
+
+        // Status checks
+        function checkStatus() {
+            const storageStatus = document.getElementById('storage-status');
+            const gamesStatus = document.getElementById('games-status');
+
+            try {
+                localStorage.setItem('_test', '1');
+                localStorage.removeItem('_test');
+                storageStatus.classList.remove('error', 'warning');
+            } catch (e) {
+                storageStatus.classList.add('error');
+            }
+
+            // Games always available in this context
+            gamesStatus.classList.remove('error', 'warning');
+        }
+    </script>
+</body>
+</html>

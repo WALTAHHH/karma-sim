@@ -1,5 +1,8 @@
-// Scratch Card UI
-// Canvas-based scratch-off interaction
+/**
+ * @fileoverview Scratch Card UI
+ * Canvas-based scratch-off interaction
+ * @module games/scratchUI
+ */
 
 import {
     SCRATCH_COST,
@@ -105,6 +108,16 @@ export function showScratchGame(karma, spendKarmaFn, addKarmaFn, onClose) {
             <div class="scratch-footer">
                 <button class="scratch-btn-secondary" id="btn-scratch-close">Back to Hub</button>
             </div>
+            
+            <div class="scratch-debug" id="scratch-debug" style="display: none;">
+                <div class="debug-title">🔧 Debug</div>
+                <div class="debug-row">
+                    <button class="debug-btn" data-rarity="common">Common</button>
+                    <button class="debug-btn" data-rarity="rare">Rare</button>
+                    <button class="debug-btn" data-rarity="legendary">Legendary</button>
+                    <button class="debug-btn" id="debug-reveal">Reveal All</button>
+                </div>
+            </div>
         </div>
         <div class="scratch-particles" id="scratch-particles"></div>
     `;
@@ -114,6 +127,11 @@ export function showScratchGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     bindEvents();
     updateButtonState();
     updateStats();
+    
+    // Show debug panel if enabled
+    if (window.debugMode) {
+        document.getElementById('scratch-debug').style.display = 'block';
+    }
 }
 
 function bindEvents() {
@@ -123,6 +141,71 @@ function bindEvents() {
         hideScratchGame();
         if (onCloseFn) onCloseFn();
     });
+    
+    // Debug bindings
+    document.querySelectorAll('#scratch-debug .debug-btn[data-rarity]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const rarity = btn.dataset.rarity;
+            handleDebugCard(rarity);
+        });
+    });
+    
+    document.getElementById('debug-reveal')?.addEventListener('click', handleDebugReveal);
+}
+
+/**
+ * Generate a debug card with guaranteed wins of specific rarity
+ * @param {string} rarity - Target rarity for winning symbols
+ */
+function handleDebugCard(rarity) {
+    if (currentCard && !cardComplete) return;
+    
+    // Generate card with forced win line
+    const pool = SYMBOL_POOLS[rarity];
+    const winSymbol = pool.symbols[0];
+    
+    // Create card with guaranteed top row win
+    currentCard = [];
+    for (let i = 0; i < 9; i++) {
+        if (i < 3) {
+            // Top row = guaranteed match
+            currentCard.push({ symbol: winSymbol, rarity });
+        } else {
+            // Rest = random (avoiding accidental matches)
+            const randomRarity = ['common', 'uncommon', 'rare'][Math.floor(Math.random() * 3)];
+            const randomPool = SYMBOL_POOLS[randomRarity];
+            const sym = randomPool.symbols[Math.floor(Math.random() * randomPool.symbols.length)];
+            currentCard.push({ symbol: sym, rarity: randomRarity });
+        }
+    }
+    
+    cardComplete = false;
+    scratchPercent = 0;
+    revealedCells = new Set();
+    
+    createCardCanvases();
+    document.getElementById('btn-auto-scratch').disabled = false;
+    updateButtonState();
+}
+
+/**
+ * Debug: Instantly reveal all scratch coating
+ */
+function handleDebugReveal() {
+    if (!currentCard || cardComplete) return;
+    
+    // Clear the scratch canvas
+    if (scratchCtx) {
+        scratchCtx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+    }
+    
+    // Mark all cells as revealed
+    for (let i = 0; i < 9; i++) {
+        revealedCells.add(i);
+    }
+    
+    // Complete the card
+    completeCard();
 }
 
 function handleBuyCard() {

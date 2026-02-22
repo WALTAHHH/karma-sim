@@ -1,9 +1,18 @@
 // Karma Pusher UI - Full Featured
-// Canvas rendering, upgrades, events, maximum juice
+// Canvas rendering, upgrades, events, debug/design tools
 
-import { getPusherGame, PRIZES, UPGRADES, SPECIAL_EVENTS } from './pusher.js';
-import { spawnParticles, spawnFireworks, screenFlash, playTick, playWinSound, playChime, sleep } from './shared.js';
+import { 
+    getPusherGame, 
+    PRIZES, 
+    UPGRADES, 
+    SPECIAL_EVENTS,
+    PHYSICS,
+    getPhysics,
+    setPhysics
+} from './pusher.js';
+import { spawnParticles, spawnFireworks, screenFlash, playTick, playWinSound, playChime } from './shared.js';
 
+// UI State
 let pusherContainer = null;
 let canvas = null;
 let ctx = null;
@@ -18,11 +27,21 @@ let dropPosition = 0.5;
 let screenShake = 0;
 let notifications = [];
 let showUpgradePanel = false;
+let showDebugPanel = false;
+let showDesignPanel = false;
 
+// Constants
 const DROP_COST = 1;
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 320;
 
+/**
+ * Show the pusher game overlay
+ * @param {number} karma - Current karma balance
+ * @param {Function} spendKarmaFn - Callback to spend karma
+ * @param {Function} addKarmaFn - Callback to add karma
+ * @param {Function} onClose - Callback when game closes
+ */
 export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     hidePusherGame();
     
@@ -39,9 +58,13 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
         <div class="pusher-machine">
             <div class="pusher-header">
                 <h2 class="pusher-title">🪙 KARMA PUSHER</h2>
-                <div class="pusher-karma-display">
-                    <span class="karma-icon">☯</span>
-                    <span class="karma-amount" id="pusher-karma">${karma}</span>
+                <div class="pusher-header-right">
+                    <button class="pusher-icon-btn" id="btn-debug" title="Debug Tools">🐛</button>
+                    <button class="pusher-icon-btn" id="btn-design" title="Design Tools">🎨</button>
+                    <div class="pusher-karma-display">
+                        <span class="karma-icon">☯</span>
+                        <span class="karma-amount" id="pusher-karma">${karma}</span>
+                    </div>
                 </div>
             </div>
             
@@ -51,6 +74,7 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
                 <div class="pusher-glass">
                     <canvas id="pusher-canvas" width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}"></canvas>
                     <div class="combo-display" id="combo-display"></div>
+                    <div class="debug-overlay" id="debug-overlay"></div>
                 </div>
             </div>
             
@@ -80,12 +104,63 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
                 <button class="pusher-btn-secondary" id="btn-pusher-close">Close</button>
             </div>
             
+            <!-- Upgrade Panel -->
             <div class="upgrade-panel" id="upgrade-panel">
                 <div class="upgrade-panel-header">
                     <h3>⬆️ UPGRADES</h3>
                     <button class="upgrade-close" id="upgrade-close">✕</button>
                 </div>
                 <div class="upgrade-list" id="upgrade-list"></div>
+            </div>
+            
+            <!-- Debug Panel -->
+            <div class="debug-panel" id="debug-panel">
+                <div class="debug-panel-header">
+                    <h3>🐛 DEBUG</h3>
+                    <button class="debug-close" id="debug-close">✕</button>
+                </div>
+                <div class="debug-section">
+                    <h4>Events</h4>
+                    <div class="debug-buttons" id="debug-events"></div>
+                </div>
+                <div class="debug-section">
+                    <h4>Spawn Prizes</h4>
+                    <div class="debug-buttons" id="debug-prizes"></div>
+                </div>
+                <div class="debug-section">
+                    <h4>Shortcuts</h4>
+                    <div class="debug-buttons">
+                        <button class="debug-btn" id="debug-max-upgrades">Max All Upgrades</button>
+                        <button class="debug-btn" id="debug-add-karma">+100 Karma</button>
+                        <button class="debug-btn" id="debug-spawn-50">Spawn 50 Items</button>
+                        <button class="debug-btn" id="debug-spawn-200">Spawn 200 Items</button>
+                        <button class="debug-btn" id="debug-clear">Clear Board</button>
+                        <button class="debug-btn danger" id="debug-reset">Full Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Design Panel -->
+            <div class="design-panel" id="design-panel">
+                <div class="design-panel-header">
+                    <h3>🎨 DESIGN</h3>
+                    <button class="design-close" id="design-close">✕</button>
+                </div>
+                <div class="design-section">
+                    <h4>Physics</h4>
+                    <div class="design-sliders" id="design-physics"></div>
+                </div>
+                <div class="design-section">
+                    <h4>Presets</h4>
+                    <div class="design-buttons">
+                        <button class="design-btn" id="preset-default">Default</button>
+                        <button class="design-btn" id="preset-bouncy">Bouncy</button>
+                        <button class="design-btn" id="preset-heavy">Heavy</button>
+                        <button class="design-btn" id="preset-chaos">Chaos</button>
+                        <button class="design-btn" id="preset-save">Save Custom</button>
+                        <button class="design-btn" id="preset-load">Load Custom</button>
+                    </div>
+                </div>
             </div>
             
             <div class="notification-container" id="notifications"></div>
@@ -99,18 +174,25 @@ export function showPusherGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     ctx = canvas.getContext('2d');
     
     bindEvents();
+    buildDebugPanel();
+    buildDesignPanel();
     updateStats();
     updateUpgradePanel();
     startGameLoop();
 }
 
+/**
+ * Bind all UI event handlers
+ */
 function bindEvents() {
     const game = getPusherGame();
     
+    // Drop position slider
     document.getElementById('drop-slider').addEventListener('input', (e) => {
         dropPosition = e.target.value / 100;
     });
     
+    // Single drop
     document.getElementById('btn-drop').addEventListener('click', () => {
         if (currentKarma >= DROP_COST) {
             doDrop();
@@ -119,6 +201,7 @@ function bindEvents() {
         }
     });
     
+    // Multi drop
     document.getElementById('btn-drop-multi').addEventListener('click', () => {
         const count = game.getMultiDropCount();
         const cost = DROP_COST * count;
@@ -129,21 +212,52 @@ function bindEvents() {
         }
     });
     
+    // Upgrade panel toggle
     document.getElementById('btn-upgrades').addEventListener('click', () => {
         showUpgradePanel = !showUpgradePanel;
-        document.getElementById('upgrade-panel').classList.toggle('show', showUpgradePanel);
+        showDebugPanel = false;
+        showDesignPanel = false;
+        updatePanelVisibility();
     });
     
     document.getElementById('upgrade-close').addEventListener('click', () => {
         showUpgradePanel = false;
-        document.getElementById('upgrade-panel').classList.remove('show');
+        updatePanelVisibility();
     });
     
+    // Debug panel toggle
+    document.getElementById('btn-debug').addEventListener('click', () => {
+        showDebugPanel = !showDebugPanel;
+        showUpgradePanel = false;
+        showDesignPanel = false;
+        updatePanelVisibility();
+    });
+    
+    document.getElementById('debug-close').addEventListener('click', () => {
+        showDebugPanel = false;
+        updatePanelVisibility();
+    });
+    
+    // Design panel toggle
+    document.getElementById('btn-design').addEventListener('click', () => {
+        showDesignPanel = !showDesignPanel;
+        showUpgradePanel = false;
+        showDebugPanel = false;
+        updatePanelVisibility();
+    });
+    
+    document.getElementById('design-close').addEventListener('click', () => {
+        showDesignPanel = false;
+        updatePanelVisibility();
+    });
+    
+    // Close button
     document.getElementById('btn-pusher-close').addEventListener('click', () => {
         hidePusherGame();
         if (onCloseFn) onCloseFn();
     });
     
+    // Canvas click to set drop position
     canvas.addEventListener('click', (e) => {
         const rect = canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
@@ -152,6 +266,187 @@ function bindEvents() {
     });
 }
 
+/**
+ * Build debug panel content
+ */
+function buildDebugPanel() {
+    const game = getPusherGame();
+    
+    // Event trigger buttons
+    const eventsContainer = document.getElementById('debug-events');
+    eventsContainer.innerHTML = Object.entries(SPECIAL_EVENTS).map(([key, event]) => 
+        `<button class="debug-btn" data-event="${key}">${event.name.split(' ')[0]} ${key}</button>`
+    ).join('');
+    
+    eventsContainer.querySelectorAll('[data-event]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const eventType = btn.dataset.event;
+            const triggered = game.triggerEvent(eventType);
+            if (triggered) {
+                addNotification(triggered.name, '#fbbf24', 2000);
+                playWinSound('rare');
+            }
+        });
+    });
+    
+    // Prize spawn buttons
+    const prizesContainer = document.getElementById('debug-prizes');
+    prizesContainer.innerHTML = Object.entries(PRIZES).map(([key, prize]) => 
+        `<button class="debug-btn" data-prize="${key}">${prize.icon} ${key}</button>`
+    ).join('');
+    
+    prizesContainer.querySelectorAll('[data-prize]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            game.dropCoin(dropPosition, btn.dataset.prize);
+            playChime(500);
+        });
+    });
+    
+    // Shortcut buttons
+    document.getElementById('debug-max-upgrades').addEventListener('click', () => {
+        game.maxAllUpgrades();
+        updateUpgradePanel();
+        addNotification('⬆️ All upgrades maxed!', '#c084fc');
+    });
+    
+    document.getElementById('debug-add-karma').addEventListener('click', () => {
+        currentKarma += 100;
+        addFn(100);
+        updateKarmaDisplay();
+        addNotification('+100☯', '#4ade80');
+    });
+    
+    document.getElementById('debug-spawn-50').addEventListener('click', () => {
+        game.spawnTestItems(50);
+        addNotification('Spawned 50 items', '#60a5fa');
+    });
+    
+    document.getElementById('debug-spawn-200').addEventListener('click', () => {
+        game.spawnTestItems(200);
+        addNotification('Spawned 200 items (stress test!)', '#ef4444');
+    });
+    
+    document.getElementById('debug-clear').addEventListener('click', () => {
+        game.clearItems();
+        addNotification('Board cleared', '#888');
+    });
+    
+    document.getElementById('debug-reset').addEventListener('click', () => {
+        if (confirm('Full reset? This clears all upgrades and stats!')) {
+            game.fullReset();
+            updateUpgradePanel();
+            updateStats();
+            addNotification('Full reset complete', '#ef4444');
+        }
+    });
+}
+
+/**
+ * Build design panel content with physics sliders
+ */
+function buildDesignPanel() {
+    const physics = getPhysics();
+    
+    const sliderDefs = [
+        { key: 'gravity', label: 'Gravity', min: 0.05, max: 1, step: 0.05 },
+        { key: 'friction', label: 'Friction', min: 0.5, max: 0.99, step: 0.01 },
+        { key: 'bounce', label: 'Bounce', min: 0.1, max: 0.9, step: 0.05 },
+        { key: 'maxVelocity', label: 'Max Velocity', min: 5, max: 30, step: 1 },
+        { key: 'collisionDamping', label: 'Collision Damping', min: 0.1, max: 1, step: 0.05 }
+    ];
+    
+    const container = document.getElementById('design-physics');
+    container.innerHTML = sliderDefs.map(def => `
+        <div class="design-slider-row">
+            <label>${def.label}</label>
+            <input type="range" class="design-slider" 
+                   data-key="${def.key}" 
+                   min="${def.min}" max="${def.max}" step="${def.step}" 
+                   value="${physics[def.key]}">
+            <span class="design-value" id="value-${def.key}">${physics[def.key]}</span>
+        </div>
+    `).join('');
+    
+    // Bind slider events
+    container.querySelectorAll('.design-slider').forEach(slider => {
+        slider.addEventListener('input', () => {
+            const key = slider.dataset.key;
+            const value = parseFloat(slider.value);
+            setPhysics({ [key]: value });
+            document.getElementById(`value-${key}`).textContent = value;
+        });
+    });
+    
+    // Preset buttons
+    const presets = {
+        default: { gravity: 0.3, friction: 0.85, bounce: 0.4, maxVelocity: 15, collisionDamping: 0.5 },
+        bouncy: { gravity: 0.2, friction: 0.9, bounce: 0.8, maxVelocity: 20, collisionDamping: 0.7 },
+        heavy: { gravity: 0.6, friction: 0.7, bounce: 0.2, maxVelocity: 12, collisionDamping: 0.3 },
+        chaos: { gravity: 0.15, friction: 0.95, bounce: 0.85, maxVelocity: 25, collisionDamping: 0.9 }
+    };
+    
+    Object.entries(presets).forEach(([name, values]) => {
+        document.getElementById(`preset-${name}`).addEventListener('click', () => {
+            setPhysics(values);
+            updatePhysicsSliders();
+            addNotification(`Applied "${name}" preset`, '#c084fc');
+        });
+    });
+    
+    // Save/load custom preset
+    document.getElementById('preset-save').addEventListener('click', () => {
+        const physics = getPhysics();
+        localStorage.setItem('pusher_physics_preset', JSON.stringify(physics));
+        addNotification('Preset saved!', '#4ade80');
+    });
+    
+    document.getElementById('preset-load').addEventListener('click', () => {
+        try {
+            const saved = localStorage.getItem('pusher_physics_preset');
+            if (saved) {
+                setPhysics(JSON.parse(saved));
+                updatePhysicsSliders();
+                addNotification('Preset loaded!', '#4ade80');
+            } else {
+                addNotification('No saved preset', '#888');
+            }
+        } catch (e) {
+            addNotification('Failed to load preset', '#ef4444');
+        }
+    });
+}
+
+/**
+ * Update physics sliders to reflect current values
+ */
+function updatePhysicsSliders() {
+    const physics = getPhysics();
+    document.querySelectorAll('.design-slider').forEach(slider => {
+        const key = slider.dataset.key;
+        if (physics[key] !== undefined) {
+            slider.value = physics[key];
+            document.getElementById(`value-${key}`).textContent = physics[key];
+        }
+    });
+}
+
+/**
+ * Update panel visibility based on state
+ */
+function updatePanelVisibility() {
+    document.getElementById('upgrade-panel').classList.toggle('show', showUpgradePanel);
+    document.getElementById('debug-panel').classList.toggle('show', showDebugPanel);
+    document.getElementById('design-panel').classList.toggle('show', showDesignPanel);
+    
+    // Toggle debug overlay
+    const game = getPusherGame();
+    game.debugMode = showDebugPanel;
+}
+
+/**
+ * Perform a single drop
+ * @param {number} position - X position (0-1)
+ */
 function doDrop(position = dropPosition) {
     const game = getPusherGame();
     
@@ -168,12 +463,14 @@ function doDrop(position = dropPosition) {
         playChime(500);
     }
     
-    // Small screen shake
     screenShake = 3;
-    
     updateStats();
 }
 
+/**
+ * Perform a multi-drop
+ * @param {number} count - Number of items to drop
+ */
 function doMultiDrop(count) {
     const game = getPusherGame();
     const cost = DROP_COST * count;
@@ -182,7 +479,7 @@ function doMultiDrop(count) {
     spendFn(cost);
     updateKarmaDisplay();
     
-    // Staggered drops across the platform
+    // Staggered drops with spread
     for (let i = 0; i < count; i++) {
         setTimeout(() => {
             const spread = 0.3;
@@ -196,14 +493,13 @@ function doMultiDrop(count) {
     updateStats();
 }
 
+/**
+ * Start the main game loop
+ */
 function startGameLoop() {
     const game = getPusherGame();
-    let lastTime = performance.now();
     
-    function loop(currentTime) {
-        const deltaTime = currentTime - lastTime;
-        lastTime = currentTime;
-        
+    function loop() {
         // Update physics
         const result = game.update(currentKarma, addFn);
         
@@ -227,6 +523,11 @@ function startGameLoop() {
         // Update combo display
         updateComboDisplay();
         
+        // Update debug overlay
+        if (game.debugMode) {
+            updateDebugOverlay();
+        }
+        
         // Render
         render(game);
         
@@ -239,17 +540,19 @@ function startGameLoop() {
     animationFrame = requestAnimationFrame(loop);
 }
 
+/**
+ * Handle prize collections
+ * @param {PusherItem[]} items - Collected items
+ */
 function handleCollections(items) {
     const game = getPusherGame();
     let totalKarma = 0;
-    let biggestWin = 0;
     let gotJackpot = false;
     
     for (const item of items) {
         const result = game.collectPrize(item);
         totalKarma += result.value;
         
-        if (result.value > biggestWin) biggestWin = result.value;
         if (item.prizeType === 'jackpot' || item.prizeType === 'megajackpot') {
             gotJackpot = true;
         }
@@ -298,20 +601,26 @@ function handleCollections(items) {
     updateStats();
 }
 
+/**
+ * Update the event banner
+ */
 function updateEventBanner() {
     const game = getPusherGame();
     const banner = document.getElementById('event-banner');
     
     if (game.activeEvent) {
+        const eventDef = SPECIAL_EVENTS[game.activeEvent.type];
+        const progress = game.eventTimer / eventDef.duration;
+        
         banner.innerHTML = `
             <div class="event-name">${game.activeEvent.name}</div>
             <div class="event-effect">${game.activeEvent.effect}</div>
-            <div class="event-timer" style="width: ${(game.eventTimer / SPECIAL_EVENTS[game.activeEvent.type].duration) * 100}%"></div>
+            <div class="event-timer" style="width: ${progress * 100}%"></div>
         `;
         banner.classList.add('active');
         
         // Trigger notification on new event
-        if (game.eventTimer > SPECIAL_EVENTS[game.activeEvent.type].duration - 100) {
+        if (game.eventTimer > eventDef.duration - 100) {
             addNotification(game.activeEvent.name, '#fbbf24', 2000);
             playWinSound('rare');
         }
@@ -320,6 +629,9 @@ function updateEventBanner() {
     }
 }
 
+/**
+ * Update the combo display
+ */
 function updateComboDisplay() {
     const game = getPusherGame();
     const display = document.getElementById('combo-display');
@@ -332,6 +644,29 @@ function updateComboDisplay() {
     }
 }
 
+/**
+ * Update debug overlay
+ */
+function updateDebugOverlay() {
+    const game = getPusherGame();
+    const info = game.getDebugInfo();
+    const overlay = document.getElementById('debug-overlay');
+    
+    overlay.innerHTML = `
+        <div class="debug-stat">FPS: ${info.fps}</div>
+        <div class="debug-stat">Items: ${info.itemCount} (${info.settledCount} settled)</div>
+        <div class="debug-stat">Pusher: ${info.pusherX} ${info.pusherDir}</div>
+        <div class="debug-stat">Event: ${info.activeEvent} (${info.eventTimer}s)</div>
+        <div class="debug-stat">Cooldown: ${info.eventCooldown}s</div>
+        <div class="debug-stat">Combo: ${info.combo} (${info.comboTimer}s)</div>
+    `;
+    overlay.classList.add('show');
+}
+
+/**
+ * Main render function
+ * @param {PusherGame} game - Game instance
+ */
 function render(game) {
     const platform = game.getPlatform();
     const pusherBar = game.getPusherBar();
@@ -350,14 +685,14 @@ function render(game) {
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Draw cabinet background
+    // Background gradient
     const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
     bgGrad.addColorStop(0, '#1a1a2e');
     bgGrad.addColorStop(1, '#0f0f1a');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Platform glow (subtle)
+    // Platform glow
     ctx.shadowColor = 'rgba(251, 191, 36, 0.2)';
     ctx.shadowBlur = 20;
     
@@ -383,7 +718,6 @@ function render(game) {
     pusherGrad.addColorStop(1, '#444');
     ctx.fillStyle = pusherGrad;
     
-    // Rounded pusher bar
     const barX = game.pusherX;
     ctx.beginPath();
     ctx.roundRect(barX, pusherBar.y, pusherWidth, pusherBar.height, 4);
@@ -435,7 +769,6 @@ function render(game) {
     // Draw drop preview
     const dropX = platform.x + 15 + dropPosition * (platform.width - 30);
     
-    // Drop line
     ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
@@ -451,13 +784,12 @@ function render(game) {
     ctx.textBaseline = 'middle';
     ctx.fillText('🪙', dropX, 25);
     
-    // Gold rush overlay
+    // Event overlays
     if (game.activeEvent?.type === 'goldRush') {
         ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     }
     
-    // Frenzy overlay
     if (game.activeEvent?.type === 'frenzy') {
         const pulse = Math.sin(Date.now() / 100) * 0.03;
         ctx.fillStyle = `rgba(239, 68, 68, ${0.05 + pulse})`;
@@ -467,14 +799,18 @@ function render(game) {
     ctx.restore();
 }
 
+/**
+ * Draw a single item
+ * @param {PusherItem} item - Item to draw
+ * @param {Object} platform - Platform bounds
+ */
 function drawItem(item, platform) {
     ctx.save();
     ctx.translate(item.x + item.wobble, item.y);
     
     // Glow effect
     if (item.glow > 0 || item.type !== 'coin') {
-        const glowColor = item.color || '#fbbf24';
-        ctx.shadowColor = glowColor;
+        ctx.shadowColor = item.color || '#fbbf24';
         ctx.shadowBlur = item.type === 'coin' ? 5 * item.glow : 8;
     }
     
@@ -500,16 +836,24 @@ function drawItem(item, platform) {
     ctx.restore();
 }
 
+/**
+ * Add a notification
+ * @param {string} text - Notification text
+ * @param {string} color - Text color
+ * @param {number} duration - Duration in ms
+ */
 function addNotification(text, color = '#fff', duration = 2000) {
     notifications.push({
         text,
         color,
         createdAt: Date.now(),
-        duration,
-        y: 0
+        duration
     });
 }
 
+/**
+ * Update notifications display
+ */
 function updateNotifications() {
     const container = document.getElementById('notifications');
     const now = Date.now();
@@ -526,6 +870,10 @@ function updateNotifications() {
     }).join('');
 }
 
+/**
+ * Update karma display
+ * @param {number} delta - Amount changed
+ */
 function updateKarmaDisplay(delta = 0) {
     const display = document.getElementById('pusher-karma');
     if (display) {
@@ -555,6 +903,9 @@ function updateKarmaDisplay(delta = 0) {
     }
 }
 
+/**
+ * Update stats display
+ */
 function updateStats() {
     const game = getPusherGame();
     const stats = game.stats;
@@ -570,6 +921,9 @@ function updateStats() {
     }
 }
 
+/**
+ * Update upgrade panel
+ */
 function updateUpgradePanel() {
     const game = getPusherGame();
     const list = document.getElementById('upgrade-list');
@@ -622,12 +976,19 @@ function updateUpgradePanel() {
     });
 }
 
+/**
+ * Shake a button for feedback
+ * @param {string} id - Button element ID
+ */
 function shakeButton(id) {
     const btn = document.getElementById(id);
     btn.classList.add('shake');
     setTimeout(() => btn.classList.remove('shake'), 500);
 }
 
+/**
+ * Hide the pusher game overlay
+ */
 export function hidePusherGame() {
     if (animationFrame) {
         cancelAnimationFrame(animationFrame);
@@ -640,8 +1001,15 @@ export function hidePusherGame() {
     canvas = null;
     ctx = null;
     notifications = [];
+    showUpgradePanel = false;
+    showDebugPanel = false;
+    showDesignPanel = false;
 }
 
+/**
+ * Update karma from external source
+ * @param {number} karma - New karma value
+ */
 export function updatePusherKarma(karma) {
     currentKarma = karma;
     updateKarmaDisplay();

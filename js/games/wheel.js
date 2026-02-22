@@ -1,8 +1,12 @@
-// Wheel of Fortune Logic
-// Physics-based spin with weighted wedge rewards
+/**
+ * @fileoverview Wheel of Fortune Logic
+ * Physics-based spin with weighted wedge rewards
+ * @module games/wheel
+ */
 
 const WHEEL_STATE_KEY = 'karma_simulator_wheel';
 
+/** @constant {number} Cost in karma to spin */
 export const SPIN_COST = 3;
 
 // Wedge definitions - size is relative (smaller = rarer)

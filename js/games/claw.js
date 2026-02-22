@@ -1,8 +1,12 @@
-// Claw Machine Game Logic
-// Physics, prize generation, grab mechanics
+/**
+ * @fileoverview Claw Machine Game Logic
+ * Physics, prize generation, grab mechanics
+ * @module games/claw
+ */
 
 import { RARITIES, REWARD_POOL } from '../gacha.js';
 
+/** @constant {number} Cost in karma to play */
 const CLAW_COST = 5;
 const POSITION_TIME_LIMIT = 10000; // 10 seconds to position
 

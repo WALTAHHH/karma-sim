@@ -1,6 +1,10 @@
-// Plinko Physics & Game Logic
-// Simple 2D physics with bouncy ball and pegs
+/**
+ * @fileoverview Plinko Physics & Game Logic
+ * Simple 2D physics with bouncy ball and pegs
+ * @module games/plinko
+ */
 
+/** @constant {number} Cost in karma to play */
 const PLINKO_COST = 3;
 const BASE_PAYOUT = 3;
 
@@ -29,7 +33,9 @@ let gameState = {
     result: null,
     onPegHit: null,
     onSlotLand: null,
-    onBallMove: null
+    onBallMove: null,
+    boardWidth: 400,  // Stored for physics calculations
+    boardHeight: 500
 };
 
 // Initialize game board
@@ -76,6 +82,8 @@ export function initPlinkoBoard(width, height) {
     
     gameState.pegs = pegs;
     gameState.slots = slots;
+    gameState.boardWidth = width;
+    gameState.boardHeight = height;
     
     return { pegs, slots, MULTIPLIERS };
 }
@@ -173,8 +181,8 @@ function runPhysics(canvasHeight) {
         ball.x = boardPadding + ball.radius;
         ball.vx = Math.abs(ball.vx) * BOUNCE_DAMPING;
     }
-    if (ball.x > 380 - boardPadding - ball.radius) { // Assuming ~400 width
-        ball.x = 380 - boardPadding - ball.radius;
+    if (ball.x > gameState.boardWidth - boardPadding - ball.radius) {
+        ball.x = gameState.boardWidth - boardPadding - ball.radius;
         ball.vx = -Math.abs(ball.vx) * BOUNCE_DAMPING;
     }
     

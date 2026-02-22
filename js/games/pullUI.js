@@ -1,5 +1,8 @@
-// Pull UI - Dramatic single-card reveal experience
-// Anticipation → Crack → REVEAL!
+/**
+ * @fileoverview Pull UI - Dramatic single-card reveal experience
+ * Anticipation → Crack → REVEAL!
+ * @module games/pullUI
+ */
 
 import {
     RARITIES,

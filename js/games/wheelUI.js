@@ -1,5 +1,8 @@
-// Wheel of Fortune UI - MAXIMUM JUICE
-// Tick-tick-tick is everything
+/**
+ * @fileoverview Wheel of Fortune UI - MAXIMUM JUICE
+ * Tick-tick-tick is everything
+ * @module games/wheelUI
+ */
 
 import {
     WEDGES, SPIN_COST, 
@@ -92,6 +95,18 @@ export function showWheelGame(karma, spendKarmaFn, addKarmaFn, onClose) {
             <div class="wheel-footer">
                 <button class="wheel-btn-secondary" id="btn-wheel-close">Back to Hub</button>
             </div>
+            
+            <div class="wheel-debug" id="wheel-debug" style="display: none;">
+                <div class="debug-title">🔧 Debug</div>
+                <div class="debug-row">
+                    <button class="debug-btn" data-mult="1">1×</button>
+                    <button class="debug-btn" data-mult="3">3×</button>
+                    <button class="debug-btn" data-mult="5">5×</button>
+                    <button class="debug-btn" data-mult="10">10× JP</button>
+                    <button class="debug-btn" data-mult="0">0× BUST</button>
+                </div>
+                <div class="debug-stats" id="wheel-debug-stats"></div>
+            </div>
         </div>
         <div class="wheel-particles" id="wheel-particles"></div>
     `;
@@ -107,6 +122,12 @@ export function showWheelGame(karma, spendKarmaFn, addKarmaFn, onClose) {
     
     // Bind events
     bindEvents(onClose);
+    
+    // Show debug panel if debug mode enabled
+    if (window.debugMode) {
+        document.getElementById('wheel-debug').style.display = 'block';
+        updateDebugStats();
+    }
     updateButtonState();
     updateStats();
 }
@@ -121,6 +142,85 @@ function bindEvents(onClose) {
         hideWheelGame();
         if (onClose) onClose();
     });
+    
+    // Debug: Force land on specific multiplier
+    document.querySelectorAll('#wheel-debug .debug-btn[data-mult]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetMult = parseFloat(btn.dataset.mult);
+            handleDebugSpin(targetMult);
+        });
+    });
+}
+
+/**
+ * Debug spin to land on a specific multiplier
+ * @param {number} targetMult - Target multiplier to land on
+ */
+async function handleDebugSpin(targetMult) {
+    if (isSpinning) return;
+    
+    isSpinning = true;
+    updateButtonState();
+    
+    // Find a wedge with target multiplier
+    const wedges = getWedgeAngles();
+    const targetWedge = wedges.find(w => w.multiplier === targetMult);
+    if (!targetWedge) {
+        console.warn('No wedge with multiplier', targetMult);
+        isSpinning = false;
+        return;
+    }
+    
+    // Calculate rotation to land on target
+    const targetAngle = 360 - targetWedge.midAngle;
+    const fullRotations = 5 * 360; // 5 full spins for drama
+    const finalRotation = fullRotations + targetAngle;
+    
+    // Initialize spinner manually
+    spinner = new WheelSpinner();
+    spinner.rotation = 0;
+    
+    // Animate to target
+    const duration = 3000;
+    const startTime = performance.now();
+    
+    const animateDebug = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+        
+        spinner.rotation = eased * finalRotation;
+        drawWheel(spinner.rotation);
+        
+        // Tick sounds
+        if (Math.random() < 0.1 * (1.5 - progress)) {
+            const pitch = 200 + (1 - progress) * 400;
+            playWheelTick(pitch, 5 * (1 - progress));
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateDebug);
+        } else {
+            // Done - show result
+            recordSpin(targetWedge);
+            showResult(targetWedge).then(() => {
+                isSpinning = false;
+                updateButtonState();
+                updateStats();
+                updateDebugStats();
+            });
+        }
+    };
+    
+    animateDebug();
+}
+
+function updateDebugStats() {
+    const stats = getStats();
+    const el = document.getElementById('wheel-debug-stats');
+    if (el) {
+        el.innerHTML = `Spins: ${stats.totalSpins} | Won: ${stats.totalWon}☯ | Jackpots: ${stats.jackpots} | Busts: ${stats.busts}`;
+    }
 }
 
 async function handleSpin() {

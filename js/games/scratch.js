@@ -1,6 +1,10 @@
-// Scratch Card Logic
-// Symbol pools, win detection, card generation
+/**
+ * @fileoverview Scratch Card Logic
+ * Symbol pools, win detection, card generation
+ * @module games/scratch
+ */
 
+/** @constant {number} Cost in karma to buy a scratch card */
 export const SCRATCH_COST = 3;
 
 // Symbol pools by rarity

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karma Simulator - Test Runner</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a12;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #2a2a3a;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #fbbf24;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            color: #e0e0e0;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #3a3a5a;
+            border-color: #5a5a7a;
+        }
+
+        button.primary {
+            background: linear-gradient(180deg, #4ade80, #22c55e);
+            border-color: #22c55e;
+            color: #000;
+            font-weight: bold;
+        }
+
+        button.primary:hover {
+            background: linear-gradient(180deg, #5fe08c, #2ed86e);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #test-summary {
+            margin-bottom: 20px;
+        }
+
+        .summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #1a1a2e;
+            border: 2px solid #2a2a4a;
+        }
+
+        .summary.pass {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .summary.fail {
+            border-color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .summary-icon {
+            font-size: 40px;
+        }
+
+        .summary-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 15px;
+            color: #888;
+        }
+
+        .stat.passed { color: #4ade80; }
+        .stat.failed { color: #f87171; }
+        .stat.skipped { color: #888; }
+
+        #test-results {
+            background: #12121a;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .test-result {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .test-result:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .test-result.passed .test-icon { color: #4ade80; }
+        .test-result.failed .test-icon { color: #f87171; }
+        .test-result.skipped .test-icon { color: #888; }
+
+        .test-suite {
+            color: #888;
+        }
+
+        .test-name {
+            flex: 1;
+        }
+
+        .test-duration {
+            color: #666;
+            font-size: 11px;
+        }
+
+        .test-error {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(248, 113, 113, 0.15);
+            border-left: 3px solid #f87171;
+            border-radius: 4px;
+            color: #fca5a5;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        .placeholder {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+
+        .test-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .test-filter input {
+            flex: 1;
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .test-filter input:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #2a2a4a;
+            border-top-color: #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .test-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .test-tab {
+            padding: 8px 16px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .test-tab.active {
+            background: #2a2a4a;
+            border-bottom-color: transparent;
+            color: #e0e0e0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Karma Simulator Test Runner</h1>
+        <div class="subtitle">Browser-based testing without npm or node</div>
+    </div>
+
+    <div class="controls">
+        <button class="primary" id="run-btn" onclick="runAllTests()">▶ Run All Tests</button>
+        <button id="clear-btn" onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="test-summary"></div>
+
+    <div id="test-results">
+        <div class="placeholder">Click "Run All Tests" to start</div>
+    </div>
+
+    <footer>
+        Karma Simulator Test Framework v1.0
+    </footer>
+
+    <!-- Load test framework -->
+    <script src="framework.js"></script>
+
+    <!-- Load modules via importmap for browser ES6 modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "./js/": "../js/"
+        }
+    }
+    </script>
+
+    <!-- Load test files -->
+    <script type="module">
+        // Import tests
+        import './integration.test.js';
+        
+        // Make run function available
+        window.runAllTests = async function() {
+            const btn = document.getElementById('run-btn');
+            const results = document.getElementById('test-results');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Running...';
+            results.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Running tests...</div></div>';
+            
+            try {
+                await TestFramework.runTests();
+            } catch (e) {
+                console.error('Test runner error:', e);
+                results.innerHTML = `<div class="test-error">Test runner error: ${e.message}</div>`;
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '▶ Run All Tests';
+        };
+
+        window.clearResults = function() {
+            document.getElementById('test-results').innerHTML = '<div class="placeholder">Click "Run All Tests" to start</div>';
+            document.getElementById('test-summary').innerHTML = '';
+            TestFramework.reset();
+        };
+    </script>
+</body>
+</html>

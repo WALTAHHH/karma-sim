@@ -1,5 +1,8 @@
-// Game Hub - Central menu for all mini-games
-// Manages game selection and karma flow
+/**
+ * @fileoverview Game Hub - Central menu for all mini-games
+ * Manages game selection, karma flow, and navigation between games.
+ * @module games/gameHub
+ */
 
 import { showGachaMachine, hideGachaMachine, setDebugMode as setSlotsDebugMode } from './slotsUI.js';
 import { showPullGame, hidePullGame, setDebugMode as setPullDebugMode } from './pullUI.js';
@@ -9,13 +12,41 @@ import { showClawGame, hideClawGame } from './clawUI.js';
 import { showScratchGame, hideScratchGame } from './scratchUI.js';
 import { showPusherGame, hidePusherGame } from './pusherUI.js';
 
+/** @type {HTMLElement|null} */
 let hubContainer = null;
+
+/** @type {number} */
 let currentKarma = 0;
+
+/** @type {Function|null} */
 let spendKarmaFn = null;
+
+/** @type {Function|null} */
 let addKarmaFn = null;
+
+/** @type {Function|null} */
 let onHubClose = null;
 
-// Available games with their status
+/** @type {boolean} */
+let debugModeEnabled = false;
+
+/**
+ * @typedef {Object} GameDefinition
+ * @property {string} id - Unique identifier
+ * @property {string} name - Display name
+ * @property {string} icon - Emoji icon
+ * @property {string} description - Short description
+ * @property {boolean} available - Whether the game is playable
+ * @property {number} minKarma - Minimum karma to play
+ * @property {Function} launch - Function to launch the game
+ * @property {boolean} [featured] - Whether to highlight as featured
+ * @property {boolean} [comingSoon] - Whether it's coming soon
+ */
+
+/**
+ * Available games with their configuration
+ * @type {GameDefinition[]}
+ */
 const GAMES = [
     {
         id: 'slots',
@@ -23,7 +54,7 @@ const GAMES = [
         icon: '🎰',
         description: 'Pull the lever, spin the reels!',
         available: true,
-        minKarma: 3, // Minimum to play
+        minKarma: 3,
         launch: launchSlots
     },
     {
@@ -83,7 +114,13 @@ const GAMES = [
     }
 ];
 
-// Show the game hub
+/**
+ * Show the game hub menu
+ * @param {number} karma - Current karma balance
+ * @param {Function} spendFn - Function to call when spending karma
+ * @param {Function} addFn - Function to call when gaining karma
+ * @param {Function} onClose - Callback when hub is closed
+ */
 export function showGameHub(karma, spendFn, addFn, onClose) {
     hideGameHub(); // Clean up any existing
     
@@ -137,12 +174,19 @@ export function showGameHub(karma, spendFn, addFn, onClose) {
     });
 }
 
+/**
+ * Create HTML for a game card
+ * @param {GameDefinition} game - Game definition
+ * @param {number} karma - Current karma
+ * @returns {string} HTML string
+ */
 function createGameCard(game, karma) {
     const canPlay = karma >= game.minKarma;
     const classes = [
         'game-card',
         game.available ? 'available' : 'unavailable',
         game.comingSoon ? 'coming-soon' : '',
+        game.featured ? 'featured' : '',
         !canPlay && game.available ? 'insufficient-karma' : ''
     ].filter(Boolean).join(' ');
     
@@ -152,169 +196,137 @@ function createGameCard(game, karma) {
             <div class="game-name">${game.name}</div>
             <div class="game-desc">${game.description}</div>
             ${game.comingSoon ? '<div class="game-badge">COMING SOON</div>' : ''}
+            ${game.featured ? '<div class="game-badge featured">NEW</div>' : ''}
             ${game.available && !canPlay ? `<div class="game-cost">Need ${game.minKarma}☯</div>` : ''}
         </div>
     `;
 }
 
+/**
+ * Create karma callback wrapper that tracks current karma
+ * @param {boolean} isSpend - Whether this is a spend (true) or add (false) callback
+ * @returns {Function} Wrapped callback
+ */
+function createKarmaCallback(isSpend) {
+    return (amount) => {
+        if (isSpend) {
+            spendKarmaFn(amount);
+            currentKarma -= amount;
+        } else {
+            addKarmaFn(amount);
+            currentKarma += amount;
+        }
+    };
+}
+
+/**
+ * Launch Karma Slots game
+ */
 function launchSlots() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showGachaMachine(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On slots close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Launch Karma Pull game
+ */
 function launchPull() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showPullGame(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On pull close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Launch Wheel of Fate game
+ */
 function launchWheel() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showWheelGame(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On wheel close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Launch Plinko game
+ */
 function launchPlinko() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showPlinkoGame(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On plinko close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Launch Scratch Cards game
+ */
 function launchScratch() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showScratchGame(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On scratch close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Launch Claw game
+ */
 function launchClaw() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showClawGame(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On claw close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Launch Pusher game
+ */
 function launchPusher() {
-    // Hide the hub but don't remove it
     hubContainer.style.display = 'none';
     
     showPusherGame(
         currentKarma,
-        (amount) => {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        },
-        (amount) => {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        },
-        () => {
-            // On pusher close, return to hub
-            returnToHub();
-        }
+        createKarmaCallback(true),
+        createKarmaCallback(false),
+        returnToHub
     );
 }
 
+/**
+ * Return to the hub from a game
+ */
 function returnToHub() {
-    hideGachaMachine();
-    hidePullGame();
-    hideWheelGame();
-    hidePlinkoGame();
-    hideScratchGame();
-    hideClawGame();
-    hidePusherGame();
+    // Hide all games
+    hideAllGames();
     
     if (hubContainer) {
         hubContainer.style.display = 'flex';
+        
         // Update karma display
         const karmaEl = document.getElementById('hub-karma');
         if (karmaEl) karmaEl.textContent = Math.floor(currentKarma);
@@ -325,31 +337,92 @@ function returnToHub() {
             if (card && game.available) {
                 const canPlay = currentKarma >= game.minKarma;
                 card.classList.toggle('insufficient-karma', !canPlay);
+                
+                // Update cost display
+                const costEl = card.querySelector('.game-cost');
+                if (!canPlay && !costEl) {
+                    const newCostEl = document.createElement('div');
+                    newCostEl.className = 'game-cost';
+                    newCostEl.textContent = `Need ${game.minKarma}☯`;
+                    card.appendChild(newCostEl);
+                } else if (canPlay && costEl) {
+                    costEl.remove();
+                }
             }
         });
     }
 }
 
-export function hideGameHub() {
+/**
+ * Hide all game UIs
+ */
+function hideAllGames() {
     hideGachaMachine();
     hidePullGame();
     hideWheelGame();
     hidePlinkoGame();
     hideScratchGame();
     hideClawGame();
+    hidePusherGame();
+}
+
+/**
+ * Hide the game hub and all games
+ */
+export function hideGameHub() {
+    hideAllGames();
+    
     if (hubContainer) {
         hubContainer.remove();
         hubContainer = null;
     }
 }
 
-// Expose debug mode toggle for all games
+/**
+ * Set debug mode for all games
+ * @param {boolean} enabled - Whether debug mode is enabled
+ */
 export function setDebugMode(enabled) {
+    debugModeEnabled = enabled;
+    window.debugMode = enabled;
+    
+    // Propagate to all games that support it
     setSlotsDebugMode(enabled);
     setPullDebugMode(enabled);
+    // Other games can check window.debugMode directly
 }
 
-// Get current karma (for external checks)
+/**
+ * Get current karma (for external checks)
+ * @returns {number} Current karma balance
+ */
 export function getHubKarma() {
     return currentKarma;
+}
+
+/**
+ * Update hub karma externally (e.g., from debug panel)
+ * @param {number} newKarma - New karma value
+ */
+export function updateHubKarma(newKarma) {
+    currentKarma = newKarma;
+    const karmaEl = document.getElementById('hub-karma');
+    if (karmaEl) karmaEl.textContent = Math.floor(currentKarma);
+}
+
+/**
+ * Get list of available games
+ * @returns {GameDefinition[]} Array of game definitions
+ */
+export function getAvailableGames() {
+    return GAMES.filter(g => g.available);
+}
+
+/**
+ * Get game by ID
+ * @param {string} id - Game ID
+ * @returns {GameDefinition|undefined} Game definition or undefined
+ */
+export function getGameById(id) {
+    return GAMES.find(g => g.id === id);
 }

@@ -1,5 +1,8 @@
-// Slots UI - JUICY Slot Machine (migrated from gachaUI.js)
-// Uses shared.js for common utilities
+/**
+ * @fileoverview Slots UI - JUICY Slot Machine (migrated from gachaUI.js)
+ * Uses shared.js for common utilities
+ * @module games/slotsUI
+ */
 
 import { 
     RARITIES, REWARD_POOL, 

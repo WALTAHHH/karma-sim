@@ -1,5 +1,8 @@
-// Slots Game Logic (migrated from gacha.js)
-// Core slot machine mechanics
+/**
+ * @fileoverview Slots Game Logic (migrated from gacha.js)
+ * Core slot machine mechanics
+ * @module games/slots
+ */
 
 const GACHA_KEY = 'karma_simulator_gacha';
 const GACHA_CONFIG_KEY = 'karma_simulator_gacha_config';
