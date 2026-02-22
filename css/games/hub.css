@@ -1,0 +1,264 @@
+/* Game Hub Styles */
+
+/* ============ HUB OVERLAY ============ */
+.game-hub-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: hubFadeIn 0.3s ease-out;
+}
+
+@keyframes hubFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ============ HUB CONTAINER ============ */
+.game-hub {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    border: 3px solid #4a4a6a;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 560px;
+    width: 92%;
+    box-shadow: 
+        0 0 40px rgba(100, 100, 150, 0.2),
+        inset 0 2px 20px rgba(0, 0, 0, 0.4);
+    animation: hubSlideUp 0.4s ease-out;
+}
+
+@keyframes hubSlideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============ HUB HEADER ============ */
+.hub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #333;
+}
+
+.hub-title {
+    font-size: 1.6em;
+    font-weight: bold;
+    color: #e0e0e0;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+.hub-karma-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px 16px;
+    border-radius: 20px;
+    border: 2px solid #4ade80;
+}
+
+.hub-karma-display .karma-icon {
+    font-size: 1.4em;
+    animation: karmaRotate 6s linear infinite;
+}
+
+@keyframes karmaRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.hub-karma-display .karma-amount {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #4ade80;
+}
+
+/* ============ GAME GRID ============ */
+.hub-games {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+@media (max-width: 480px) {
+    .hub-games {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============ GAME CARDS ============ */
+.game-card {
+    background: linear-gradient(180deg, #252540 0%, #1a1a30 100%);
+    border: 2px solid #3a3a5a;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: all 0.25s ease;
+    overflow: hidden;
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transition: left 0.5s ease;
+}
+
+.game-card.available {
+    cursor: pointer;
+}
+
+.game-card.available:hover {
+    border-color: #6a6aaa;
+    background: linear-gradient(180deg, #303060 0%, #202050 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(100, 100, 180, 0.25);
+}
+
+.game-card.available:hover::before {
+    left: 100%;
+}
+
+.game-card.available:active {
+    transform: translateY(-1px);
+}
+
+/* Unavailable/Coming Soon */
+.game-card.unavailable {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.game-card.coming-soon {
+    border-style: dashed;
+}
+
+.game-card.insufficient-karma {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.game-card.insufficient-karma .game-icon {
+    filter: grayscale(0.5);
+}
+
+/* Card content */
+.game-icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.game-card.available:hover .game-icon {
+    animation: iconBounce 0.5s ease;
+}
+
+@keyframes iconBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+.game-name {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #e0e0e0;
+    margin-bottom: 6px;
+}
+
+.game-desc {
+    font-size: 0.8em;
+    color: #888;
+    line-height: 1.3;
+}
+
+.game-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000;
+    font-size: 0.55em;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.game-cost {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-size: 0.7em;
+    color: #f87171;
+}
+
+/* ============ HUB FOOTER ============ */
+.hub-footer {
+    display: flex;
+    justify-content: center;
+}
+
+.hub-close-btn {
+    background: transparent;
+    border: 1px solid #555;
+    color: #999;
+    padding: 12px 35px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1em;
+    transition: all 0.2s ease;
+}
+
+.hub-close-btn:hover {
+    border-color: #888;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============ SHARED GAME OVERLAY BASE ============ */
+.game-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* ============ SHARED PARTICLE CONTAINER ============ */
+#game-particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10001;
+    overflow: hidden;
+}

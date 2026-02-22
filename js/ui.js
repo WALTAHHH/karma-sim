@@ -91,7 +91,7 @@ export function showTitleScreen(onBegin, onCollections, runHistory = null, onGac
     if (onGacha && karma > 0) {
         const gachaBtn = document.createElement('button');
         gachaBtn.className = 'begin-button gacha-title-btn';
-        gachaBtn.innerHTML = '🎰 Karma Slots';
+        gachaBtn.innerHTML = '🎮 Game Hub';
         gachaBtn.addEventListener('click', () => onGacha(karma));
         menu.appendChild(gachaBtn);
     }

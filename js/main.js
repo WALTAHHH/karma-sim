@@ -52,7 +52,7 @@ import {
     discoverTag,
     getTagKarmaModifier
 } from './tags.js';
-import { showGachaMachine, hideGachaMachine, setDebugMode as setGachaDebugMode } from './gachaUI.js';
+import { showGameHub, hideGameHub, setDebugMode as setGachaDebugMode } from './games/gameHub.js';
 
 // Game state
 const state = {
@@ -821,7 +821,7 @@ function showSummary() {
     }
 
     if (karma > 0) {
-        ui.showButton('🎰 Karma Slots', () => showGachaScreen(karma), hasChildren);
+        ui.showButton('🎮 Game Hub', () => showGachaScreen(karma), hasChildren);
         ui.showButton('Spend Karma', showUnlockShop, true);
         ui.showButton('Begin again', showTitle, true);
     } else {
@@ -848,9 +848,9 @@ function startAsDescendant(parentLife) {
     startLife();
 }
 
-// Show gacha screen
+// Show game hub screen
 function showGachaScreen(currentKarma) {
-    showGachaMachine(
+    showGameHub(
         currentKarma,
         (amount) => spendKarma(amount),  // Spend karma function
         (amount) => adjustKarma(amount), // Add karma function (for rewards)
