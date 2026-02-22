@@ -765,6 +765,9 @@ function render(game) {
     
     // Draw items with depth sorting and 3D effect
     const sortedItems = [...game.items].sort((a, b) => a.y - b.y);
+    if (sortedItems.length > 0 && Math.random() < 0.01) {
+        console.log('Drawing', sortedItems.length, 'items, first:', sortedItems[0]);
+    }
     for (const item of sortedItems) {
         drawItem3D(item, platform);
     }
