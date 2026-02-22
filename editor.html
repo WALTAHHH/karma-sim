@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karma Simulator - Content Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 380px;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: #222;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: #111;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            color: #888;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Panels */
+        .panel {
+            background: #0a0a0a;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 12px 15px;
+            background: #111;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* Event List Panel */
+        .search-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            background: #151515;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-select {
+            flex: 1;
+            background: #151515;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .event-item {
+            background: #151515;
+            border: 1px solid #222;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .event-item:hover {
+            border-color: #444;
+            background: #1a1a1a;
+        }
+
+        .event-item.selected {
+            border-color: #666;
+            background: #1a1a2a;
+        }
+
+        .event-item.modified {
+            border-left: 3px solid #a85;
+        }
+
+        .event-item-id {
+            color: #aaa;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .event-item-meta {
+            display: flex;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .event-badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .badge-childhood { background: #2a4; color: #fff; }
+        .badge-young_adult { background: #48a; color: #fff; }
+        .badge-middle { background: #a84; color: #fff; }
+        .badge-late { background: #84a; color: #fff; }
+        .badge-choice { background: #333; color: #aaa; }
+        .badge-forced { background: #533; color: #caa; }
+
+        /* Editor Panel */
+        .editor-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #444;
+            font-style: italic;
+        }
+
+        .editor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-section {
+            border: 1px solid #222;
+            background: #111;
+            padding: 15px;
+        }
+
+        .form-section-title {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #222;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group.full-width {
+            flex-basis: 100%;
+        }
+
+        label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            background: #151515;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        /* Options Section */
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-card {
+            border: 1px solid #333;
+            background: #0d0d0d;
+            padding: 15px;
+        }
+
+        .option-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .option-number {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .option-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Outcomes Section */
+        .outcomes-list {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #222;
+        }
+
+        .outcomes-title {
+            font-size: 10px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .outcome-card {
+            background: #111;
+            border: 1px solid #222;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .outcome-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .outcome-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .outcome-number {
+            font-size: 11px;
+            color: #555;
+        }
+
+        .effects-editor {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .effect-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .effect-chip input {
+            width: 50px;
+            padding: 4px 6px;
+            text-align: center;
+        }
+
+        .effect-chip .remove-effect {
+            cursor: pointer;
+            color: #666;
+        }
+
+        .effect-chip .remove-effect:hover {
+            color: #a55;
+        }
+
+        /* Buttons */
+        .btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .btn:hover {
+            border-color: #666;
+            background: #1a1a1a;
+        }
+
+        .btn.primary {
+            border-color: #5a5;
+            color: #5a5;
+        }
+
+        .btn.primary:hover {
+            background: #1a2a1a;
+        }
+
+        .btn.danger {
+            border-color: #a55;
+            color: #a55;
+        }
+
+        .btn.danger:hover {
+            background: #2a1a1a;
+        }
+
+        .btn.small {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+        }
+
+        .btn-icon:hover {
+            color: #aaa;
+        }
+
+        .btn-icon.danger:hover {
+            color: #a55;
+        }
+
+        /* Preview Panel */
+        .preview-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #222;
+        }
+
+        .preview-section:last-child {
+            border-bottom: none;
+        }
+
+        .preview-label {
+            font-size: 10px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .preview-prompt {
+            color: #ccc;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .preview-option {
+            background: #151515;
+            border: 1px solid #333;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .preview-option-text {
+            color: #e0e0e0;
+            margin-bottom: 8px;
+        }
+
+        .preview-outcomes {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .preview-outcome {
+            margin: 6px 0;
+            padding-left: 10px;
+            border-left: 2px solid #333;
+        }
+
+        .preview-outcome .weight {
+            color: #888;
+        }
+
+        .preview-outcome .effects {
+            color: #7a7;
+        }
+
+        .preview-outcome .karma {
+            color: #aa7;
+        }
+
+        /* JSON Panel */
+        .json-panel {
+            background: #0d0d0d;
+            border: 1px solid #222;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+            color: #888;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: #111;
+            border: 1px solid #333;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-body textarea {
+            min-height: 300px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #222;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            grid-column: 1 / -1;
+            background: #111;
+            border-top: 1px solid #333;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .status-message {
+            color: #888;
+        }
+
+        .status-message.success {
+            color: #5a5;
+        }
+
+        .status-message.error {
+            color: #a55;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+        /* Add effect dropdown */
+        .add-effect-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .add-effect-row select {
+            flex: 1;
+            padding: 6px 8px;
+        }
+
+        /* Hidden Cost Editor */
+        .hidden-cost-section {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #442;
+            background: #1a1510;
+        }
+
+        .hidden-cost-title {
+            font-size: 10px;
+            color: #a85;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        /* Tradeoff Section */
+        .tradeoff-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Requirements Editor */
+        .requirements-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .requirement-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1a1a2a;
+            border: 1px solid #335;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .requirement-chip select,
+        .requirement-chip input {
+            padding: 4px 6px;
+            font-size: 11px;
+        }
+
+        .requirement-chip select {
+            width: 80px;
+        }
+
+        .requirement-chip input {
+            width: 40px;
+            text-align: center;
+        }
+
+        /* Tabs for Preview Panel */
+        .preview-tabs {
+            display: flex;
+            border-bottom: 1px solid #222;
+            margin-bottom: 15px;
+        }
+
+        .preview-tab {
+            padding: 8px 15px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .preview-tab:hover {
+            color: #888;
+        }
+
+        .preview-tab.active {
+            color: #aaa;
+            border-bottom-color: #666;
+        }
+
+        .preview-content {
+            display: none;
+        }
+
+        .preview-content.active {
+            display: block;
+        }
+
+        /* Era Variants Accordion */
+        .era-variants-section {
+            margin-top: 15px;
+        }
+
+        .era-variant-item {
+            border: 1px solid #222;
+            margin-bottom: 8px;
+        }
+
+        .era-variant-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #151515;
+            cursor: pointer;
+        }
+
+        .era-variant-header:hover {
+            background: #1a1a1a;
+        }
+
+        .era-variant-name {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .era-variant-body {
+            padding: 12px;
+            display: none;
+        }
+
+        .era-variant-item.expanded .era-variant-body {
+            display: block;
+        }
+
+        /* Unsaved changes indicator */
+        .unsaved-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #a85;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 280px 1fr;
+            }
+
+            .preview-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .list-panel {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>KARMA SIMULATOR — CONTENT EDITOR</h1>
+            <div class="header-actions">
+                <button class="btn" onclick="createNewEvent()">+ New Event</button>
+                <button class="btn" onclick="showImportModal()">Import JSON</button>
+                <button class="btn primary" onclick="exportJSON()">Export JSON</button>
+                <button class="btn" onclick="copyAsJS()">Copy as JS</button>
+                <button class="btn" onclick="saveToLocalStorage()">Save Draft</button>
+            </div>
+        </header>
+
+        <!-- Event List Panel -->
+        <div class="panel list-panel">
+            <div class="panel-header">
+                <span class="panel-title">Events</span>
+                <span id="event-count">0 events</span>
+            </div>
+            <div class="panel-content">
+                <div class="search-box">
+                    <input type="text" class="search-input" id="search-input" placeholder="Search events...">
+                    <div class="filter-row">
+                        <select class="filter-select" id="filter-stage">
+                            <option value="">All Stages</option>
+                            <option value="childhood">Childhood</option>
+                            <option value="young_adult">Young Adult</option>
+                            <option value="middle">Middle</option>
+                            <option value="late">Late</option>
+                        </select>
+                        <select class="filter-select" id="filter-type">
+                            <option value="">All Types</option>
+                            <option value="choice">Choice</option>
+                            <option value="forced">Forced</option>
+                        </select>
+                    </div>
+                    <div class="filter-row">
+                        <select class="filter-select" id="filter-region">
+                            <option value="">All Regions</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="event-list" id="event-list"></div>
+            </div>
+        </div>
+
+        <!-- Editor Panel -->
+        <div class="panel editor-panel">
+            <div class="panel-header">
+                <span class="panel-title">Editor</span>
+                <span id="editor-status"></span>
+            </div>
+            <div class="panel-content" id="editor-content">
+                <div class="editor-empty">Select an event to edit</div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="panel preview-panel">
+            <div class="panel-header">
+                <span class="panel-title">Preview</span>
+            </div>
+            <div class="panel-content" id="preview-content">
+                <div class="preview-tabs">
+                    <div class="preview-tab active" data-tab="game">Game View</div>
+                    <div class="preview-tab" data-tab="json">JSON</div>
+                </div>
+                <div class="preview-content active" id="preview-game">
+                    <div style="color: #444; font-style: italic;">Select an event to preview</div>
+                </div>
+                <div class="preview-content" id="preview-json">
+                    <div class="json-panel" id="json-output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="status-message" class="status-message">Ready</span>
+            <span id="status-info">Loaded from events.js</span>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal-overlay hidden" id="import-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Import Events JSON</span>
+                <button class="btn-icon" onclick="hideImportModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #888; margin-bottom: 15px;">Paste your events JSON array below or upload a file:</p>
+                <input type="file" id="import-file" accept=".json" style="margin-bottom: 15px;">
+                <textarea id="import-textarea" placeholder='[{"id": "example", "stage": "childhood", ...}]'></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideImportModal()">Cancel</button>
+                <button class="btn primary" onclick="importJSON()">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { events as originalEvents } from './js/events.js';
+        import { TRADEOFF_ARCHETYPES, INTENSITY_MODIFIERS, CLARITY_LEVELS } from './js/tradeoffs.js';
+        import { REGIONAL_CLUSTERS } from './js/regions.js';
+        import { eras } from './js/eras.js';
+
+        // State
+        let events = [];
+        let selectedEventId = null;
+        let modifiedEvents = new Set();
+        let originalEventData = {};
+
+        // Stats available in the game
+        const STATS = ['health', 'wealth', 'education', 'connections'];
+
+        // Initialize
+        function init() {
+            // Try loading from localStorage first
+            const saved = localStorage.getItem('karma-editor-events');
+            if (saved) {
+                try {
+                    events = JSON.parse(saved);
+                    setStatus('Loaded from localStorage draft', 'success');
+                    document.getElementById('status-info').textContent = 'Draft version (localStorage)';
+                } catch (e) {
+                    events = JSON.parse(JSON.stringify(originalEvents));
+                    setStatus('Error loading draft, using original', 'error');
+                }
+            } else {
+                events = JSON.parse(JSON.stringify(originalEvents));
+            }
+
+            // Store original data for comparison
+            originalEvents.forEach(e => {
+                originalEventData[e.id] = JSON.stringify(e);
+            });
+
+            // Populate region filter
+            populateRegionFilter();
+
+            // Render event list
+            renderEventList();
+
+            // Setup event listeners
+            setupEventListeners();
+
+            // Expose globals for inline handlers
+            window.events = events;
+            window.selectEvent = selectEvent;
+            window.createNewEvent = createNewEvent;
+            window.deleteEvent = deleteEvent;
+            window.saveEvent = saveEvent;
+            window.addOption = addOption;
+            window.removeOption = removeOption;
+            window.addOutcome = addOutcome;
+            window.removeOutcome = removeOutcome;
+            window.addEffect = addEffect;
+            window.removeEffect = removeEffect;
+            window.addRequirement = addRequirement;
+            window.removeRequirement = removeRequirement;
+            window.showImportModal = showImportModal;
+            window.hideImportModal = hideImportModal;
+            window.importJSON = importJSON;
+            window.exportJSON = exportJSON;
+            window.copyAsJS = copyAsJS;
+            window.saveToLocalStorage = saveToLocalStorage;
+            window.updatePreview = updatePreview;
+            window.TRADEOFF_ARCHETYPES = TRADEOFF_ARCHETYPES;
+            window.REGIONAL_CLUSTERS = REGIONAL_CLUSTERS;
+            window.eras = eras;
+            window.STATS = STATS;
+        }
+
+        function populateRegionFilter() {
+            const select = document.getElementById('filter-region');
+            Object.keys(REGIONAL_CLUSTERS).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = REGIONAL_CLUSTERS[key].name;
+                select.appendChild(option);
+            });
+        }
+
+        function setupEventListeners() {
+            // Search
+            document.getElementById('search-input').addEventListener('input', renderEventList);
+            document.getElementById('filter-stage').addEventListener('change', renderEventList);
+            document.getElementById('filter-type').addEventListener('change', renderEventList);
+            document.getElementById('filter-region').addEventListener('change', renderEventList);
+
+            // Preview tabs
+            document.querySelectorAll('.preview-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.preview-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('preview-' + tab.dataset.tab).classList.add('active');
+                });
+            });
+
+            // Import file handler
+            document.getElementById('import-file').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        document.getElementById('import-textarea').value = ev.target.result;
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+
+        function renderEventList() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const stageFilter = document.getElementById('filter-stage').value;
+            const typeFilter = document.getElementById('filter-type').value;
+            const regionFilter = document.getElementById('filter-region').value;
+
+            const filtered = events.filter(event => {
+                if (searchTerm && !event.id.toLowerCase().includes(searchTerm) &&
+                    !event.prompt?.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                if (stageFilter && event.stage !== stageFilter) return false;
+                if (typeFilter && event.type !== typeFilter) return false;
+                if (regionFilter && event.region !== regionFilter) return false;
+                return true;
+            });
+
+            const container = document.getElementById('event-list');
+            container.innerHTML = filtered.map(event => {
+                const isModified = modifiedEvents.has(event.id) || 
+                    (originalEventData[event.id] && JSON.stringify(event) !== originalEventData[event.id]);
+                return `
+                    <div class="event-item ${event.id === selectedEventId ? 'selected' : ''} ${isModified ? 'modified' : ''}"
+                         onclick="selectEvent('${event.id}')">
+                        <div class="event-item-id">${event.id}</div>
+                        <div class="event-item-meta">
+                            <span class="event-badge badge-${event.stage}">${event.stage}</span>
+                            <span class="event-badge badge-${event.type}">${event.type}</span>
+                            ${event.region ? `<span style="color: #666; font-size: 10px;">${event.region}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('event-count').textContent = `${filtered.length} / ${events.length} events`;
+        }
+
+        window.selectEvent = function(id) {
+            selectedEventId = id;
+            renderEventList();
+            renderEditor();
+            updatePreview();
+        }
+
+        function renderEditor() {
+            const container = document.getElementById('editor-content');
+            const event = events.find(e => e.id === selectedEventId);
+
+            if (!event) {
+                container.innerHTML = '<div class="editor-empty">Select an event to edit</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <form class="editor-form" onsubmit="event.preventDefault(); saveEvent();">
+                    <!-- Basic Info -->
+                    <div class="form-section">
+                        <div class="form-section-title">Basic Information</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Event ID</label>
+                                <input type="text" id="edit-id" value="${event.id}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Stage</label>
+                                <select id="edit-stage">
+                                    <option value="childhood" ${event.stage === 'childhood' ? 'selected' : ''}>Childhood</option>
+                                    <option value="young_adult" ${event.stage === 'young_adult' ? 'selected' : ''}>Young Adult</option>
+                                    <option value="middle" ${event.stage === 'middle' ? 'selected' : ''}>Middle</option>
+                                    <option value="late" ${event.stage === 'late' ? 'selected' : ''}>Late</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="edit-type">
+                                    <option value="choice" ${event.type === 'choice' ? 'selected' : ''}>Choice</option>
+                                    <option value="forced" ${event.type === 'forced' ? 'selected' : ''}>Forced</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>Prompt</label>
+                                <textarea id="edit-prompt" oninput="updatePreview()">${event.prompt || ''}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Region (optional)</label>
+                                <select id="edit-region">
+                                    <option value="">None</option>
+                                    ${Object.keys(REGIONAL_CLUSTERS).map(key => 
+                                        `<option value="${key}" ${event.region === key ? 'selected' : ''}>${REGIONAL_CLUSTERS[key].name}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Special Flag</label>
+                                <input type="text" id="edit-special" value="${event.special || ''}" placeholder="e.g., migration">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Requirements -->
+                    <div class="form-section">
+                        <div class="form-section-title">Requirements (optional)</div>
+                        <div class="requirements-list" id="requirements-list">
+                            ${renderRequirements(event.requirements || {})}
+                        </div>
+                        <button type="button" class="btn small" style="margin-top: 10px;" onclick="addRequirement()">+ Add Requirement</button>
+                    </div>
+
+                    <!-- Tradeoff -->
+                    <div class="form-section">
+                        <div class="form-section-title">Tradeoff (optional)</div>
+                        <div class="tradeoff-section">
+                            <div class="form-group">
+                                <label>Archetype</label>
+                                <select id="edit-tradeoff-archetype">
+                                    <option value="">None</option>
+                                    ${Object.keys(TRADEOFF_ARCHETYPES).map(key =>
+                                        `<option value="${key}" ${event.tradeoff?.archetype === key ? 'selected' : ''}>${TRADEOFF_ARCHETYPES[key].name}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Intensity</label>
+                                <select id="edit-tradeoff-intensity">
+                                    <option value="">None</option>
+                                    <option value="mild" ${event.tradeoff?.intensity === 'mild' ? 'selected' : ''}>Mild</option>
+                                    <option value="moderate" ${event.tradeoff?.intensity === 'moderate' ? 'selected' : ''}>Moderate</option>
+                                    <option value="severe" ${event.tradeoff?.intensity === 'severe' ? 'selected' : ''}>Severe</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Clarity</label>
+                                <select id="edit-tradeoff-clarity">
+                                    <option value="">None</option>
+                                    <option value="transparent" ${event.tradeoff?.clarity === 'transparent' ? 'selected' : ''}>Transparent</option>
+                                    <option value="partial" ${event.tradeoff?.clarity === 'partial' ? 'selected' : ''}>Partial</option>
+                                    <option value="hidden" ${event.tradeoff?.clarity === 'hidden' ? 'selected' : ''}>Hidden</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="form-section">
+                        <div class="form-section-title">Options</div>
+                        <div class="options-list" id="options-list">
+                            ${(event.options || []).map((opt, i) => renderOption(opt, i)).join('')}
+                        </div>
+                        <button type="button" class="btn" style="margin-top: 15px;" onclick="addOption()">+ Add Option</button>
+                    </div>
+
+                    <!-- Actions -->
+                    <div style="display: flex; gap: 10px; justify-content: space-between;">
+                        <button type="button" class="btn danger" onclick="deleteEvent('${event.id}')">Delete Event</button>
+                        <button type="submit" class="btn primary">Save Changes</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function renderRequirements(requirements) {
+            if (!requirements || Object.keys(requirements).length === 0) {
+                return '<span style="color: #555; font-size: 12px;">No requirements</span>';
+            }
+
+            return Object.entries(requirements).map(([stat, condition], i) => {
+                const operator = condition.charAt(0);
+                const value = condition.substring(1);
+                return `
+                    <div class="requirement-chip">
+                        <select onchange="updateRequirement(${i}, 'stat', this.value)" data-req-stat="${stat}">
+                            ${STATS.map(s => `<option value="${s}" ${s === stat ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                        <select onchange="updateRequirement(${i}, 'op', this.value)" data-req-op="${operator}">
+                            <option value=">" ${operator === '>' ? 'selected' : ''}>&gt;</option>
+                            <option value="<" ${operator === '<' ? 'selected' : ''}>&lt;</option>
+                            <option value="=" ${operator === '=' ? 'selected' : ''}>=</option>
+                        </select>
+                        <input type="number" value="${value}" onchange="updateRequirement(${i}, 'value', this.value)" data-req-value="${value}">
+                        <span class="remove-effect" onclick="removeRequirement(${i})">✕</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderOption(option, index) {
+            return `
+                <div class="option-card" data-option-index="${index}">
+                    <div class="option-header">
+                        <span class="option-number">Option ${index + 1}</span>
+                        <div class="option-actions">
+                            <button type="button" class="btn-icon danger" onclick="removeOption(${index})">✕</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Button Text</label>
+                        <input type="text" value="${option.text || ''}" onchange="updateOption(${index}, 'text', this.value)" oninput="updatePreview()">
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label>Preview Description</label>
+                            <input type="text" value="${option.preview?.description || ''}" onchange="updateOptionPreview(${index}, 'description', this.value)">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Preview Gains</label>
+                            <input type="text" value="${(option.preview?.gains || []).join(', ')}" onchange="updateOptionPreview(${index}, 'gains', this.value.split(',').map(s => s.trim()).filter(s => s))" placeholder="health, wealth">
+                        </div>
+                        <div class="form-group">
+                            <label>Preview Risks</label>
+                            <input type="text" value="${(option.preview?.risks || []).join(', ')}" onchange="updateOptionPreview(${index}, 'risks', this.value.split(',').map(s => s.trim()).filter(s => s))" placeholder="connections">
+                        </div>
+                    </div>
+                    <div class="outcomes-list">
+                        <div class="outcomes-title">Outcomes</div>
+                        ${(option.outcomes || []).map((out, j) => renderOutcome(out, index, j)).join('')}
+                        <button type="button" class="btn small" style="margin-top: 10px;" onclick="addOutcome(${index})">+ Add Outcome</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderOutcome(outcome, optionIndex, outcomeIndex) {
+            return `
+                <div class="outcome-card" data-outcome-index="${outcomeIndex}">
+                    <div class="outcome-header">
+                        <span class="outcome-number">Outcome ${outcomeIndex + 1}</span>
+                        <button type="button" class="btn-icon danger" onclick="removeOutcome(${optionIndex}, ${outcomeIndex})">✕</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="max-width: 80px;">
+                            <label>Weight</label>
+                            <input type="number" value="${outcome.weight || 0}" min="0" max="100" 
+                                onchange="updateOutcome(${optionIndex}, ${outcomeIndex}, 'weight', parseInt(this.value))">
+                        </div>
+                        <div class="form-group" style="max-width: 80px;">
+                            <label>Karma</label>
+                            <input type="number" value="${outcome.karma || 0}" min="-10" max="10" 
+                                onchange="updateOutcome(${optionIndex}, ${outcomeIndex}, 'karma', parseInt(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" value="${outcome.description || ''}" 
+                                onchange="updateOutcome(${optionIndex}, ${outcomeIndex}, 'description', this.value)"
+                                oninput="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Effects</label>
+                        <div class="effects-editor">
+                            ${Object.entries(outcome.effects || {}).map(([stat, delta]) => `
+                                <div class="effect-chip">
+                                    <span>${stat}</span>
+                                    <input type="number" value="${delta}" min="-5" max="5"
+                                        onchange="updateEffect(${optionIndex}, ${outcomeIndex}, '${stat}', parseInt(this.value))">
+                                    <span class="remove-effect" onclick="removeEffect(${optionIndex}, ${outcomeIndex}, '${stat}')">✕</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="add-effect-row">
+                            <select id="new-effect-${optionIndex}-${outcomeIndex}">
+                                ${STATS.filter(s => !(outcome.effects || {})[s]).map(s => 
+                                    `<option value="${s}">${s}</option>`
+                                ).join('')}
+                            </select>
+                            <button type="button" class="btn small" onclick="addEffect(${optionIndex}, ${outcomeIndex})">+ Add</button>
+                        </div>
+                    </div>
+                    ${outcome.hiddenCost ? `
+                        <div class="hidden-cost-section">
+                            <div class="hidden-cost-title">Hidden Cost</div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Trigger</label>
+                                    <select onchange="updateHiddenCost(${optionIndex}, ${outcomeIndex}, 'trigger', this.value)">
+                                        <option value="immediate" ${outcome.hiddenCost.trigger === 'immediate' ? 'selected' : ''}>Immediate</option>
+                                        <option value="next_stage" ${outcome.hiddenCost.trigger === 'next_stage' ? 'selected' : ''}>Next Stage</option>
+                                        <option value="delayed" ${outcome.hiddenCost.trigger === 'delayed' ? 'selected' : ''}>Delayed</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Description</label>
+                                    <input type="text" value="${outcome.hiddenCost.description || ''}"
+                                        onchange="updateHiddenCost(${optionIndex}, ${outcomeIndex}, 'description', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    ` : `
+                        <button type="button" class="btn small" style="margin-top: 8px;" onclick="addHiddenCost(${optionIndex}, ${outcomeIndex})">+ Add Hidden Cost</button>
+                    `}
+                </div>
+            `;
+        }
+
+        // Update functions
+        window.updateOption = function(optionIndex, field, value) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event && event.options[optionIndex]) {
+                event.options[optionIndex][field] = value;
+                modifiedEvents.add(selectedEventId);
+                updatePreview();
+            }
+        }
+
+        window.updateOptionPreview = function(optionIndex, field, value) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event && event.options[optionIndex]) {
+                if (!event.options[optionIndex].preview) {
+                    event.options[optionIndex].preview = {};
+                }
+                event.options[optionIndex].preview[field] = value;
+                modifiedEvents.add(selectedEventId);
+                updatePreview();
+            }
+        }
+
+        window.updateOutcome = function(optionIndex, outcomeIndex, field, value) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]?.outcomes[outcomeIndex]) {
+                event.options[optionIndex].outcomes[outcomeIndex][field] = value;
+                modifiedEvents.add(selectedEventId);
+                updatePreview();
+            }
+        }
+
+        window.updateEffect = function(optionIndex, outcomeIndex, stat, value) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]?.outcomes[outcomeIndex]) {
+                if (!event.options[optionIndex].outcomes[outcomeIndex].effects) {
+                    event.options[optionIndex].outcomes[outcomeIndex].effects = {};
+                }
+                event.options[optionIndex].outcomes[outcomeIndex].effects[stat] = value;
+                modifiedEvents.add(selectedEventId);
+                updatePreview();
+            }
+        }
+
+        window.updateHiddenCost = function(optionIndex, outcomeIndex, field, value) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]?.outcomes[outcomeIndex]?.hiddenCost) {
+                event.options[optionIndex].outcomes[outcomeIndex].hiddenCost[field] = value;
+                modifiedEvents.add(selectedEventId);
+                updatePreview();
+            }
+        }
+
+        window.updateRequirement = function(index, field, value) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event) {
+                // Rebuild requirements from current chips
+                const chips = document.querySelectorAll('#requirements-list .requirement-chip');
+                const newReqs = {};
+                chips.forEach((chip, i) => {
+                    const stat = chip.querySelector('[data-req-stat]').value;
+                    const op = chip.querySelector('[data-req-op]').value;
+                    const val = chip.querySelector('[data-req-value]').value;
+                    newReqs[stat] = `${op}${val}`;
+                });
+                event.requirements = newReqs;
+                modifiedEvents.add(selectedEventId);
+            }
+        }
+
+        window.addOption = function() {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event) {
+                if (!event.options) event.options = [];
+                event.options.push({
+                    text: 'New option',
+                    outcomes: [
+                        { weight: 50, effects: {}, karma: 0, description: 'Outcome description' }
+                    ]
+                });
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+                updatePreview();
+            }
+        }
+
+        window.removeOption = function(index) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event && event.options) {
+                event.options.splice(index, 1);
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+                updatePreview();
+            }
+        }
+
+        window.addOutcome = function(optionIndex) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]) {
+                if (!event.options[optionIndex].outcomes) {
+                    event.options[optionIndex].outcomes = [];
+                }
+                event.options[optionIndex].outcomes.push({
+                    weight: 25,
+                    effects: {},
+                    karma: 0,
+                    description: 'New outcome'
+                });
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+                updatePreview();
+            }
+        }
+
+        window.removeOutcome = function(optionIndex, outcomeIndex) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]?.outcomes) {
+                event.options[optionIndex].outcomes.splice(outcomeIndex, 1);
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+                updatePreview();
+            }
+        }
+
+        window.addEffect = function(optionIndex, outcomeIndex) {
+            const event = events.find(e => e.id === selectedEventId);
+            const select = document.getElementById(`new-effect-${optionIndex}-${outcomeIndex}`);
+            const stat = select.value;
+            if (event?.options[optionIndex]?.outcomes[outcomeIndex] && stat) {
+                if (!event.options[optionIndex].outcomes[outcomeIndex].effects) {
+                    event.options[optionIndex].outcomes[outcomeIndex].effects = {};
+                }
+                event.options[optionIndex].outcomes[outcomeIndex].effects[stat] = 0;
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+                updatePreview();
+            }
+        }
+
+        window.removeEffect = function(optionIndex, outcomeIndex, stat) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]?.outcomes[outcomeIndex]?.effects) {
+                delete event.options[optionIndex].outcomes[outcomeIndex].effects[stat];
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+                updatePreview();
+            }
+        }
+
+        window.addRequirement = function() {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event) {
+                if (!event.requirements) event.requirements = {};
+                // Find first unused stat
+                const usedStats = Object.keys(event.requirements);
+                const availableStat = STATS.find(s => !usedStats.includes(s));
+                if (availableStat) {
+                    event.requirements[availableStat] = '>2';
+                    modifiedEvents.add(selectedEventId);
+                    renderEditor();
+                }
+            }
+        }
+
+        window.removeRequirement = function(index) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.requirements) {
+                const keys = Object.keys(event.requirements);
+                if (keys[index]) {
+                    delete event.requirements[keys[index]];
+                    modifiedEvents.add(selectedEventId);
+                    renderEditor();
+                }
+            }
+        }
+
+        window.addHiddenCost = function(optionIndex, outcomeIndex) {
+            const event = events.find(e => e.id === selectedEventId);
+            if (event?.options[optionIndex]?.outcomes[outcomeIndex]) {
+                event.options[optionIndex].outcomes[outcomeIndex].hiddenCost = {
+                    trigger: 'delayed',
+                    effects: {},
+                    description: 'Hidden consequence'
+                };
+                modifiedEvents.add(selectedEventId);
+                renderEditor();
+            }
+        }
+
+        window.saveEvent = function() {
+            const event = events.find(e => e.id === selectedEventId);
+            if (!event) return;
+
+            const newId = document.getElementById('edit-id').value.trim();
+            const oldId = selectedEventId;
+
+            // Update event data
+            event.id = newId;
+            event.stage = document.getElementById('edit-stage').value;
+            event.type = document.getElementById('edit-type').value;
+            event.prompt = document.getElementById('edit-prompt').value;
+
+            const region = document.getElementById('edit-region').value;
+            if (region) {
+                event.region = region;
+            } else {
+                delete event.region;
+            }
+
+            const special = document.getElementById('edit-special').value.trim();
+            if (special) {
+                event.special = special;
+            } else {
+                delete event.special;
+            }
+
+            // Tradeoff
+            const archetype = document.getElementById('edit-tradeoff-archetype').value;
+            const intensity = document.getElementById('edit-tradeoff-intensity').value;
+            const clarity = document.getElementById('edit-tradeoff-clarity').value;
+
+            if (archetype && intensity && clarity) {
+                event.tradeoff = { archetype, intensity, clarity };
+            } else {
+                delete event.tradeoff;
+            }
+
+            // If ID changed, update tracking
+            if (newId !== oldId) {
+                modifiedEvents.delete(oldId);
+                selectedEventId = newId;
+            }
+
+            modifiedEvents.add(newId);
+            renderEventList();
+            setStatus('Event saved', 'success');
+            updatePreview();
+        }
+
+        window.createNewEvent = function() {
+            const newId = 'new_event_' + Date.now();
+            events.push({
+                id: newId,
+                stage: 'childhood',
+                type: 'choice',
+                prompt: 'Enter event prompt here...',
+                options: [
+                    {
+                        text: 'Option 1',
+                        outcomes: [
+                            { weight: 50, effects: {}, karma: 0, description: 'Outcome description' }
+                        ]
+                    }
+                ]
+            });
+            modifiedEvents.add(newId);
+            selectedEventId = newId;
+            renderEventList();
+            renderEditor();
+            updatePreview();
+            setStatus('New event created', 'success');
+        }
+
+        window.deleteEvent = function(id) {
+            if (!confirm(`Delete event "${id}"?`)) return;
+            const index = events.findIndex(e => e.id === id);
+            if (index > -1) {
+                events.splice(index, 1);
+                modifiedEvents.delete(id);
+                if (selectedEventId === id) {
+                    selectedEventId = null;
+                    document.getElementById('editor-content').innerHTML = 
+                        '<div class="editor-empty">Select an event to edit</div>';
+                    document.getElementById('preview-game').innerHTML = 
+                        '<div style="color: #444; font-style: italic;">Select an event to preview</div>';
+                }
+                renderEventList();
+                setStatus('Event deleted', 'success');
+            }
+        }
+
+        window.updatePreview = function() {
+            const event = events.find(e => e.id === selectedEventId);
+            if (!event) return;
+
+            // Game view preview
+            const gamePreview = document.getElementById('preview-game');
+            gamePreview.innerHTML = `
+                <div class="preview-section">
+                    <div class="preview-label">Prompt</div>
+                    <div class="preview-prompt">${event.prompt || '<em>No prompt</em>'}</div>
+                </div>
+                ${event.requirements && Object.keys(event.requirements).length > 0 ? `
+                    <div class="preview-section">
+                        <div class="preview-label">Requirements</div>
+                        <div style="color: #888; font-size: 12px;">
+                            ${Object.entries(event.requirements).map(([stat, cond]) => 
+                                `${stat} ${cond}`
+                            ).join(', ')}
+                        </div>
+                    </div>
+                ` : ''}
+                ${event.tradeoff ? `
+                    <div class="preview-section">
+                        <div class="preview-label">Tradeoff</div>
+                        <div style="color: #888; font-size: 12px;">
+                            ${TRADEOFF_ARCHETYPES[event.tradeoff.archetype]?.name || event.tradeoff.archetype} 
+                            (${event.tradeoff.intensity}, ${event.tradeoff.clarity})
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="preview-section">
+                    <div class="preview-label">Options</div>
+                    ${(event.options || []).map((opt, i) => `
+                        <div class="preview-option">
+                            <div class="preview-option-text">${opt.text || 'Unnamed option'}</div>
+                            ${opt.preview?.description ? `<div style="color: #666; font-size: 12px; margin-bottom: 6px;">${opt.preview.description}</div>` : ''}
+                            <div class="preview-outcomes">
+                                ${(opt.outcomes || []).map((out, j) => `
+                                    <div class="preview-outcome">
+                                        <span class="weight">${out.weight}%</span>
+                                        ${Object.keys(out.effects || {}).length > 0 ? 
+                                            `<span class="effects">${Object.entries(out.effects).map(([s, d]) => 
+                                                `${d > 0 ? '+' : ''}${d} ${s}`
+                                            ).join(', ')}</span>` : ''}
+                                        ${out.karma ? `<span class="karma">karma ${out.karma > 0 ? '+' : ''}${out.karma}</span>` : ''}
+                                        <div style="color: #777; margin-top: 4px;">${out.description || ''}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // JSON preview
+            document.getElementById('json-output').textContent = JSON.stringify(event, null, 2);
+        }
+
+        // Import/Export
+        window.showImportModal = function() {
+            document.getElementById('import-modal').classList.remove('hidden');
+        }
+
+        window.hideImportModal = function() {
+            document.getElementById('import-modal').classList.add('hidden');
+            document.getElementById('import-textarea').value = '';
+            document.getElementById('import-file').value = '';
+        }
+
+        window.importJSON = function() {
+            const text = document.getElementById('import-textarea').value.trim();
+            try {
+                const imported = JSON.parse(text);
+                if (!Array.isArray(imported)) {
+                    throw new Error('JSON must be an array of events');
+                }
+                events = imported;
+                selectedEventId = null;
+                modifiedEvents.clear();
+                imported.forEach(e => modifiedEvents.add(e.id));
+                renderEventList();
+                document.getElementById('editor-content').innerHTML = 
+                    '<div class="editor-empty">Select an event to edit</div>';
+                hideImportModal();
+                setStatus(`Imported ${imported.length} events`, 'success');
+            } catch (e) {
+                setStatus('Import failed: ' + e.message, 'error');
+            }
+        }
+
+        window.exportJSON = function() {
+            const json = JSON.stringify(events, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'karma-events.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            setStatus('Events exported to karma-events.json', 'success');
+        }
+
+        window.copyAsJS = function() {
+            // Generate JS array syntax
+            let js = 'export const events = [\n';
+            events.forEach((event, i) => {
+                js += '    ' + formatEventAsJS(event, '    ');
+                if (i < events.length - 1) js += ',';
+                js += '\n';
+            });
+            js += '];\n';
+
+            navigator.clipboard.writeText(js).then(() => {
+                setStatus('JS code copied to clipboard', 'success');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = js;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                setStatus('JS code copied to clipboard', 'success');
+            });
+        }
+
+        function formatEventAsJS(event, indent = '') {
+            const lines = [];
+            lines.push('{');
+            
+            // Basic fields
+            lines.push(`${indent}    id: '${event.id}',`);
+            lines.push(`${indent}    stage: '${event.stage}',`);
+            lines.push(`${indent}    type: '${event.type}',`);
+            
+            if (event.requirements && Object.keys(event.requirements).length > 0) {
+                lines.push(`${indent}    requirements: { ${Object.entries(event.requirements).map(([k, v]) => `${k}: '${v}'`).join(', ')} },`);
+            }
+            
+            if (event.region) {
+                lines.push(`${indent}    region: '${event.region}',`);
+            }
+            
+            if (event.special) {
+                lines.push(`${indent}    special: '${event.special}',`);
+            }
+            
+            if (event.tradeoff) {
+                lines.push(`${indent}    tradeoff: {`);
+                lines.push(`${indent}        archetype: '${event.tradeoff.archetype}',`);
+                lines.push(`${indent}        intensity: '${event.tradeoff.intensity}',`);
+                lines.push(`${indent}        clarity: '${event.tradeoff.clarity}'`);
+                lines.push(`${indent}    },`);
+            }
+            
+            lines.push(`${indent}    prompt: '${(event.prompt || '').replace(/'/g, "\\'")}',`);
+            
+            // Options
+            lines.push(`${indent}    options: [`);
+            (event.options || []).forEach((opt, i) => {
+                lines.push(`${indent}        {`);
+                lines.push(`${indent}            text: '${(opt.text || '').replace(/'/g, "\\'")}',`);
+                
+                if (opt.preview) {
+                    lines.push(`${indent}            preview: { ${Object.entries(opt.preview).map(([k, v]) => {
+                        if (Array.isArray(v)) return `${k}: [${v.map(x => `'${x}'`).join(', ')}]`;
+                        return `${k}: '${v}'`;
+                    }).join(', ')} },`);
+                }
+                
+                lines.push(`${indent}            outcomes: [`);
+                (opt.outcomes || []).forEach((out, j) => {
+                    const parts = [];
+                    parts.push(`weight: ${out.weight}`);
+                    parts.push(`effects: { ${Object.entries(out.effects || {}).map(([k, v]) => `${k}: ${v > 0 ? '+' : ''}${v}`).join(', ')} }`);
+                    parts.push(`karma: ${out.karma || 0}`);
+                    parts.push(`description: '${(out.description || '').replace(/'/g, "\\'")}'`);
+                    
+                    const comma = j < (opt.outcomes || []).length - 1 ? ',' : '';
+                    lines.push(`${indent}                { ${parts.join(', ')} }${comma}`);
+                });
+                lines.push(`${indent}            ]`);
+                
+                const optComma = i < (event.options || []).length - 1 ? ',' : '';
+                lines.push(`${indent}        }${optComma}`);
+            });
+            lines.push(`${indent}    ]`);
+            
+            lines.push(`${indent}}`);
+            return lines.join('\n');
+        }
+
+        window.saveToLocalStorage = function() {
+            localStorage.setItem('karma-editor-events', JSON.stringify(events));
+            setStatus('Draft saved to localStorage', 'success');
+            document.getElementById('status-info').textContent = 'Draft version (localStorage)';
+        }
+
+        function setStatus(message, type = '') {
+            const el = document.getElementById('status-message');
+            el.textContent = message;
+            el.className = 'status-message ' + type;
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
