@@ -766,11 +766,17 @@ function render(game) {
     // Draw items with depth sorting and 3D effect
     const sortedItems = [...game.items].sort((a, b) => a.y - b.y);
     
+    // DEBUG: Show item count on canvas
+    ctx.fillStyle = '#ff0';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Items: ${sortedItems.length}`, 10, 20);
+    
     // TEMP DEBUG: Draw simple circles to verify items exist
     for (const item of sortedItems) {
         ctx.beginPath();
         ctx.arc(item.x, item.y, item.radius || 10, 0, Math.PI * 2);
-        ctx.fillStyle = item.color || '#fbbf24';
+        ctx.fillStyle = '#ff0000'; // Bright red for visibility
         ctx.fill();
     }
     
