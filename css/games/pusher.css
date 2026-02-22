@@ -1,4 +1,4 @@
-/* Karma Pusher - Full Featured Styles */
+/* Karma Pusher - 2.5D Arcade Style */
 
 .pusher-overlay {
     position: fixed;
@@ -9,6 +9,7 @@
     justify-content: center;
     z-index: 10000;
     animation: fadeIn 0.3s ease-out;
+    perspective: 1000px;
 }
 
 @keyframes fadeIn {
@@ -21,13 +22,13 @@
     border: 4px solid #fbbf24;
     border-radius: 20px;
     padding: 20px;
-    max-width: 440px;
+    max-width: 480px;
     width: 95%;
     box-shadow: 
         0 0 60px rgba(251, 191, 36, 0.3),
         inset 0 2px 30px rgba(0, 0, 0, 0.5);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* Ambient glow animation */
@@ -165,37 +166,226 @@
     transition: width 0.1s linear;
 }
 
-/* Cabinet */
+/* ==================== 2.5D CABINET ==================== */
+
 .pusher-cabinet {
-    background: linear-gradient(180deg, #2a2a4e 0%, #1a1a2e 100%);
+    background: linear-gradient(180deg, #1a1a2e 0%, #0a0a15 100%);
     border: 3px solid #3a3a5a;
     border-radius: 12px;
-    padding: 8px;
+    padding: 0;
     margin-bottom: 15px;
     position: relative;
+    perspective: 800px;
+    transform-style: preserve-3d;
+    overflow: visible;
 }
 
+/* 3D Scene Container */
+.pusher-3d-scene {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(35deg);
+    transform-origin: center bottom;
+    padding: 10px;
+    margin-top: 20px;
+}
+
+/* Glass/Play Field Container */
 .pusher-glass {
     background: rgba(0, 0, 0, 0.4);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
+    transform-style: preserve-3d;
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.8),
+        inset 0 0 40px rgba(0, 0, 0, 0.5);
 }
 
+/* Glass reflection effect */
 .pusher-glass::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 40%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 30%);
     pointer-events: none;
     z-index: 10;
+    border-radius: 8px;
 }
 
+/* Side Walls - 3D Perspective */
+.pusher-wall-left,
+.pusher-wall-right {
+    position: absolute;
+    top: 0;
+    bottom: 50px;
+    width: 25px;
+    background: linear-gradient(180deg, 
+        #4a4a6a 0%, 
+        #3a3a5a 30%, 
+        #2a2a4a 70%, 
+        #1a1a3a 100%);
+    transform-style: preserve-3d;
+    z-index: 5;
+}
+
+.pusher-wall-left {
+    left: -25px;
+    transform: rotateY(90deg);
+    transform-origin: right center;
+    border-radius: 4px 0 0 4px;
+    box-shadow: inset 5px 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.pusher-wall-right {
+    right: -25px;
+    transform: rotateY(-90deg);
+    transform-origin: left center;
+    border-radius: 0 4px 4px 0;
+    box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Wall metal trim */
+.pusher-wall-left::before,
+.pusher-wall-right::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #888 0%, #555 50%, #333 100%);
+}
+
+.pusher-wall-left::before { right: 0; }
+.pusher-wall-right::before { left: 0; }
+
+/* Bottom Ledge - Where coins fall off */
+.pusher-ledge {
+    position: absolute;
+    bottom: -60px;
+    left: -10px;
+    right: -10px;
+    height: 60px;
+    background: linear-gradient(180deg, 
+        #3a3a5a 0%, 
+        #2a2a4a 40%, 
+        #1a1a3a 100%);
+    transform: rotateX(-60deg);
+    transform-origin: top center;
+    transform-style: preserve-3d;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 
+        inset 0 10px 20px rgba(0, 0, 0, 0.4),
+        0 5px 15px rgba(0, 0, 0, 0.6);
+    z-index: 2;
+}
+
+/* Ledge top edge (where coins roll) */
+.pusher-ledge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: linear-gradient(180deg, 
+        #666 0%, 
+        #555 50%, 
+        #3a3a5a 100%);
+    border-radius: 2px;
+    box-shadow: 
+        0 2px 5px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Ledge coin slot/tray */
+.pusher-ledge::after {
+    content: '💰 COLLECT 💰';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: rgba(74, 222, 128, 0.8);
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+}
+
+/* Win zone glow at the edge */
+.pusher-win-zone {
+    position: absolute;
+    bottom: -5px;
+    left: 10px;
+    right: 10px;
+    height: 40px;
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(74, 222, 128, 0.1) 40%,
+        rgba(74, 222, 128, 0.3) 100%);
+    border-bottom: 2px dashed rgba(74, 222, 128, 0.6);
+    z-index: 1;
+    animation: winZonePulse 2s ease-in-out infinite;
+}
+
+@keyframes winZonePulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+/* Canvas styling */
 #pusher-canvas {
     display: block;
     width: 100%;
     height: auto;
     cursor: crosshair;
+    border-radius: 8px;
+}
+
+/* Coin/item depth effect (applied via JS) */
+.pusher-item-3d {
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.5));
+}
+
+/* Back wall visible behind pusher */
+.pusher-back-wall {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, 
+        #2a2a4a 0%, 
+        #1a1a3a 60%,
+        #15152a 100%);
+    border-radius: 8px 8px 0 0;
+    z-index: -1;
+    transform: translateZ(-30px);
+    box-shadow: inset 0 -10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Machine lights on back wall */
+.pusher-back-wall::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 10px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(251, 191, 36, 0.3) 20%,
+        rgba(251, 191, 36, 0.5) 50%,
+        rgba(251, 191, 36, 0.3) 80%,
+        transparent 100%);
+    border-radius: 5px;
+    animation: backWallLights 2s ease-in-out infinite;
+}
+
+@keyframes backWallLights {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
 }
 
 /* Combo Display */
@@ -207,7 +397,7 @@
     padding: 5px 12px;
     border-radius: 15px;
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.8) rotateX(-35deg);
     transition: all 0.2s ease;
     pointer-events: none;
     z-index: 20;
@@ -215,7 +405,7 @@
 
 .combo-display.show {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) rotateX(-35deg);
 }
 
 .combo-count {
@@ -245,6 +435,7 @@
     z-index: 25;
     opacity: 0;
     transition: opacity 0.2s ease;
+    transform: rotateX(-35deg);
 }
 
 .debug-overlay.show {
@@ -715,7 +906,7 @@
 /* Notifications */
 .notification-container {
     position: absolute;
-    top: 50%;
+    top: 40%;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
@@ -740,6 +931,25 @@
     overflow: hidden;
 }
 
+/* Falling coin animation for collections */
+@keyframes coinFall {
+    0% {
+        transform: translateY(0) rotateY(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(80px) rotateY(720deg);
+        opacity: 0;
+    }
+}
+
+.falling-coin {
+    position: absolute;
+    animation: coinFall 0.8s ease-in forwards;
+    font-size: 1.5em;
+    pointer-events: none;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
     .pusher-machine {
@@ -749,6 +959,10 @@
 
     .pusher-title {
         font-size: 1.2em;
+    }
+
+    .pusher-3d-scene {
+        transform: rotateX(30deg);
     }
 
     .drop-buttons {
@@ -773,5 +987,18 @@
     
     .design-slider-row label {
         width: 90px;
+    }
+
+    .pusher-wall-left,
+    .pusher-wall-right {
+        width: 15px;
+    }
+
+    .pusher-wall-left { left: -15px; }
+    .pusher-wall-right { right: -15px; }
+
+    .pusher-ledge {
+        height: 40px;
+        bottom: -40px;
     }
 }

@@ -15,9 +15,6 @@ import {
 import { countries } from './countries.js';
 import { eras } from './eras.js';
 import { jobCategories } from './jobs.js';
-import { showGachaMachine } from './gachaUI.js';
-import { getGachaConfig, setGachaConfig, debugResetGacha } from './gacha.js';
-
 // Tracking data key (must match main.js)
 const TRACKING_KEY = 'karma_simulator_tracking';
 
@@ -100,31 +97,6 @@ export function updateDebugPanel(state = null) {
         }
     }
     
-    // Karma Slots section
-    const gachaConfig = getGachaConfig();
-    html += '<div class="debug-section"><div class="debug-title">🎰 Karma Slots</div>';
-    html += '<button id="debug-open-slots" style="background: linear-gradient(180deg, #fbbf24, #f59e0b); border: none; color: #000; padding: 8px 12px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; border-radius: 4px;">OPEN SLOTS</button>';
-    html += '<div style="font-size: 10px; color: #888; margin-bottom: 8px;">Settings:</div>';
-    html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px;">';
-    html += `<label style="color: #888;">Pull Cost:</label><input type="number" id="debug-pull-cost" value="${gachaConfig.pullCost}" style="width: 100%; background: #222; border: 1px solid #444; color: #aaa; padding: 2px 4px; font-size: 10px;">`;
-    html += `<label style="color: #888;">Multi Cost:</label><input type="number" id="debug-multi-cost" value="${gachaConfig.multiPullCost}" style="width: 100%; background: #222; border: 1px solid #444; color: #aaa; padding: 2px 4px; font-size: 10px;">`;
-    html += `<label style="color: #888;">Multi Count:</label><input type="number" id="debug-multi-count" value="${gachaConfig.multiPullCount}" style="width: 100%; background: #222; border: 1px solid #444; color: #aaa; padding: 2px 4px; font-size: 10px;">`;
-    html += `<label style="color: #888;">Pity Threshold:</label><input type="number" id="debug-pity-threshold" value="${gachaConfig.pityThreshold}" style="width: 100%; background: #222; border: 1px solid #444; color: #aaa; padding: 2px 4px; font-size: 10px;">`;
-    html += '</div>';
-    html += '<div style="font-size: 10px; color: #888; margin: 8px 0 4px;">Drop Rates (%):</div>';
-    html += '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; font-size: 9px;">';
-    html += `<div style="text-align: center;"><div style="color: #888;">C</div><input type="number" id="debug-weight-common" value="${gachaConfig.weights.common}" style="width: 100%; background: #222; border: 1px solid #444; color: #888; padding: 2px; font-size: 9px; text-align: center;"></div>`;
-    html += `<div style="text-align: center;"><div style="color: #4ade80;">U</div><input type="number" id="debug-weight-uncommon" value="${gachaConfig.weights.uncommon}" style="width: 100%; background: #222; border: 1px solid #444; color: #4ade80; padding: 2px; font-size: 9px; text-align: center;"></div>`;
-    html += `<div style="text-align: center;"><div style="color: #60a5fa;">R</div><input type="number" id="debug-weight-rare" value="${gachaConfig.weights.rare}" style="width: 100%; background: #222; border: 1px solid #444; color: #60a5fa; padding: 2px; font-size: 9px; text-align: center;"></div>`;
-    html += `<div style="text-align: center;"><div style="color: #c084fc;">E</div><input type="number" id="debug-weight-epic" value="${gachaConfig.weights.epic}" style="width: 100%; background: #222; border: 1px solid #444; color: #c084fc; padding: 2px; font-size: 9px; text-align: center;"></div>`;
-    html += `<div style="text-align: center;"><div style="color: #fbbf24;">L</div><input type="number" id="debug-weight-legendary" value="${gachaConfig.weights.legendary}" style="width: 100%; background: #222; border: 1px solid #444; color: #fbbf24; padding: 2px; font-size: 9px; text-align: center;"></div>`;
-    html += '</div>';
-    html += '<div style="display: flex; gap: 4px; margin-top: 8px;">';
-    html += '<button id="debug-slots-apply" style="flex: 1; background: #333; border: 1px solid #555; color: #aaa; padding: 4px 8px; font-size: 10px; cursor: pointer;">Apply</button>';
-    html += '<button id="debug-slots-reset" style="flex: 1; background: #522; border: 1px solid #855; color: #aaa; padding: 4px 8px; font-size: 10px; cursor: pointer;">Reset</button>';
-    html += '</div>';
-    html += '</div>';
-
     // Era progress section
     const eraProgress = getEraUnlockProgress();
     html += '<div class="debug-section"><div class="debug-title">Eras</div>';
@@ -267,53 +239,4 @@ export function updateDebugPanel(state = null) {
         });
     }
 
-    // Karma Slots controls
-    const openSlotsBtn = document.getElementById('debug-open-slots');
-    if (openSlotsBtn) {
-        openSlotsBtn.addEventListener('click', () => {
-            showGachaMachine(
-                getKarma(),
-                (amount) => adjustKarma(-amount),
-                (amount) => adjustKarma(amount),
-                () => updateDebugPanel(displayState)
-            );
-        });
-    }
-
-    const slotsApplyBtn = document.getElementById('debug-slots-apply');
-    if (slotsApplyBtn) {
-        slotsApplyBtn.addEventListener('click', () => {
-            const newConfig = {
-                pullCost: parseInt(document.getElementById('debug-pull-cost')?.value) || 3,
-                multiPullCost: parseInt(document.getElementById('debug-multi-cost')?.value) || 25,
-                multiPullCount: parseInt(document.getElementById('debug-multi-count')?.value) || 10,
-                pityThreshold: parseInt(document.getElementById('debug-pity-threshold')?.value) || 50,
-                weights: {
-                    common: parseInt(document.getElementById('debug-weight-common')?.value) || 60,
-                    uncommon: parseInt(document.getElementById('debug-weight-uncommon')?.value) || 25,
-                    rare: parseInt(document.getElementById('debug-weight-rare')?.value) || 10,
-                    epic: parseInt(document.getElementById('debug-weight-epic')?.value) || 4,
-                    legendary: parseInt(document.getElementById('debug-weight-legendary')?.value) || 1
-                }
-            };
-            setGachaConfig(newConfig);
-            updateDebugPanel(displayState);
-        });
-    }
-
-    const slotsResetBtn = document.getElementById('debug-slots-reset');
-    if (slotsResetBtn) {
-        slotsResetBtn.addEventListener('click', () => {
-            debugResetGacha();
-            // Also reset config to defaults
-            setGachaConfig({
-                pullCost: 3,
-                multiPullCost: 25,
-                multiPullCount: 10,
-                pityThreshold: 50,
-                weights: { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 }
-            });
-            updateDebugPanel(displayState);
-        });
-    }
 }
