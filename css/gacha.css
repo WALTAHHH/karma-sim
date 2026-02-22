@@ -535,7 +535,7 @@
     font-weight: bold;
     transition: all 0.2s ease;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .gacha-btn::after {
