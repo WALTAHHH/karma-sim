@@ -299,5 +299,5 @@ export function debugGetState() {
     return getGachaState();
 }
 
-// Export costs for UI
-export { PULL_COST, MULTI_PULL_COST, MULTI_PULL_COUNT };
+// Export costs for UI (MULTI_PULL_COUNT already exported above)
+export { PULL_COST, MULTI_PULL_COST };
