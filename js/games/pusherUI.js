@@ -906,8 +906,16 @@ function drawItem3D(item, platform) {
         ctx.shadowBlur = 15;
     }
     
-    // Draw icon
+    // Draw icon with fallback circle
     const size = item.radius * 1.8;
+    
+    // Draw a colored circle behind the icon (ensures visibility)
+    ctx.beginPath();
+    ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+    ctx.fillStyle = item.color || '#fbbf24';
+    ctx.fill();
+    
+    // Draw the icon on top
     ctx.font = `${size}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
