@@ -765,9 +765,16 @@ function render(game) {
     
     // Draw items with depth sorting and 3D effect
     const sortedItems = [...game.items].sort((a, b) => a.y - b.y);
-    if (sortedItems.length > 0 && Math.random() < 0.01) {
-        console.log('Drawing', sortedItems.length, 'items, first:', sortedItems[0]);
+    
+    // TEMP DEBUG: Draw simple circles to verify items exist
+    for (const item of sortedItems) {
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, item.radius || 10, 0, Math.PI * 2);
+        ctx.fillStyle = item.color || '#fbbf24';
+        ctx.fill();
     }
+    
+    // Also draw with 3D effects
     for (const item of sortedItems) {
         drawItem3D(item, platform);
     }
@@ -879,7 +886,7 @@ function drawItem3D(item, platform) {
     const shadowOffset = 2 + depthFactor * 4;
     const shadowBlur = 3 + depthFactor * 6;
     
-    ctx.translate(item.x + item.wobble, item.y);
+    ctx.translate(item.x + (item.wobble || 0), item.y);
     ctx.scale(scale, scale);
     
     // Drop shadow
