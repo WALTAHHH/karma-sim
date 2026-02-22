@@ -908,6 +908,7 @@ function drawItem3D(item, platform) {
     ctx.font = `${size}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
     ctx.fillText(item.icon, 0, 0);
     
     ctx.restore();
