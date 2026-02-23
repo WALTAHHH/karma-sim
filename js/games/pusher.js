@@ -207,8 +207,7 @@ export class PusherItem {
     }
 
     /**
-     * Update physics for this item
-     * @param {PusherItem[]} items - All items for collision
+     * Update physics for this item (no collision - handled at game level)
      * @param {number} pusherX - Pusher bar X position
      * @param {number} pusherWidth - Pusher bar width
      * @param {Object} platform - Platform bounds
@@ -217,7 +216,7 @@ export class PusherItem {
      * @param {boolean} frenzyMode - Is frenzy event active
      * @returns {boolean} True if item has fallen off the edge
      */
-    update(items, pusherX, pusherWidth, platform, pusherBar, pusherSpeed, frenzyMode) {
+    updatePhysics(pusherX, pusherWidth, platform, pusherBar, pusherSpeed, frenzyMode) {
         this.age++;
         
         // Decay visual effects
@@ -278,9 +277,6 @@ export class PusherItem {
             if (Math.abs(this.vy) < 0.5) this.vy = 0;
         }
         
-        // Item-to-item collisions
-        this.handleItemCollisions(items);
-        
         // Check if settled (not moving much)
         if (Math.abs(this.vx) < PHYSICS.settleThresholdVX && 
             Math.abs(this.vy) < PHYSICS.settleThresholdVY) {
@@ -302,51 +298,6 @@ export class PusherItem {
         
         // Return true if fallen off (collected!)
         return this.y > platform.edgeY + 50;
-    }
-
-    /**
-     * Handle collisions with other items
-     * @param {PusherItem[]} items - All items to check
-     */
-    handleItemCollisions(items) {
-        for (const other of items) {
-            if (other === this) continue;
-            
-            const dx = other.x - this.x;
-            const dy = other.y - this.y;
-            const distSq = dx * dx + dy * dy;
-            const minDist = this.radius + other.radius;
-            
-            // Early exit if not colliding
-            if (distSq >= minDist * minDist || distSq === 0) continue;
-            
-            const dist = Math.sqrt(distSq);
-            const overlap = (minDist - dist) / 2;
-            const nx = dx / dist;
-            const ny = dy / dist;
-            
-            // Separate items
-            this.x -= nx * overlap;
-            this.y -= ny * overlap;
-            other.x += nx * overlap;
-            other.y += ny * overlap;
-            
-            // Exchange velocity along collision normal
-            const dvx = this.vx - other.vx;
-            const dvy = this.vy - other.vy;
-            const dot = dvx * nx + dvy * ny;
-            
-            const damping = PHYSICS.collisionDamping;
-            this.vx -= dot * nx * damping;
-            this.vy -= dot * ny * damping;
-            other.vx += dot * nx * damping;
-            other.vy += dot * ny * damping;
-            
-            // Small flash on significant collision
-            if (Math.abs(dot) > 1) {
-                this.flash = Math.min(this.flash + 0.3, 1);
-            }
-        }
     }
 
     /**
@@ -547,11 +498,10 @@ export class PusherGame {
             }
         }
 
-        // Update all items and collect fallen ones
+        // Update all items (physics only, no collision)
         const fallen = [];
         this.items = this.items.filter(item => {
-            const hasFallen = item.update(
-                this.items, 
+            const hasFallen = item.updatePhysics(
                 this.pusherX, 
                 pusherWidth,
                 platform, 
@@ -565,8 +515,51 @@ export class PusherGame {
             }
             return true;
         });
+        
+        // Single collision pass - check each pair only ONCE (O(n²/2) instead of O(n²))
+        const items = this.items;
+        const len = items.length;
+        for (let i = 0; i < len; i++) {
+            for (let j = i + 1; j < len; j++) {
+                this.resolveCollision(items[i], items[j]);
+            }
+        }
 
         return { fallen, autoDrop: false };
+    }
+    
+    /**
+     * Resolve collision between two items (called once per pair)
+     */
+    resolveCollision(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const distSq = dx * dx + dy * dy;
+        const minDist = a.radius + b.radius;
+        
+        if (distSq >= minDist * minDist || distSq === 0) return;
+        
+        const dist = Math.sqrt(distSq);
+        const overlap = (minDist - dist) / 2;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        
+        // Separate items
+        a.x -= nx * overlap;
+        a.y -= ny * overlap;
+        b.x += nx * overlap;
+        b.y += ny * overlap;
+        
+        // Exchange velocity
+        const dvx = a.vx - b.vx;
+        const dvy = a.vy - b.vy;
+        const dot = dvx * nx + dvy * ny;
+        
+        const damping = PHYSICS.collisionDamping;
+        a.vx -= dot * nx * damping;
+        a.vy -= dot * ny * damping;
+        b.vx += dot * nx * damping;
+        b.vy += dot * ny * damping;
     }
 
     /**
