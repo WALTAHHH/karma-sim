@@ -372,24 +372,10 @@ function render(game) {
     
     ctx.shadowBlur = 0;
     
-    // Depth grid lines (perspective effect)
-    ctx.strokeStyle = 'rgba(80, 80, 120, 0.2)';
-    ctx.lineWidth = 1;
-    const gridSpacing = 25;
-    for (let y = platform.y + gridSpacing; y < platform.edgeY; y += gridSpacing) {
-        ctx.beginPath();
-        ctx.moveTo(platform.x, y);
-        ctx.lineTo(platform.x + platform.width, y);
-        ctx.stroke();
-    }
-    
-    // Platform border with inner highlight
+    // Platform border
     ctx.strokeStyle = '#4a4a6a';
     ctx.lineWidth = 3;
     ctx.strokeRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
-    ctx.strokeStyle = 'rgba(100, 100, 140, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(platform.x + 2, platform.y + 2, platform.width - 4, platform.edgeY - platform.y - 4);
     
     // Pusher bar with 3D depth
     const barX = game.pusherX;
@@ -411,15 +397,8 @@ function render(game) {
     ctx.fill();
     
     // Top shine
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.fillRect(barX + 3, pusherBar.y + 2, pusherWidth - 6, 3);
-    
-    // Front face (3D depth)
-    const frontGrad = ctx.createLinearGradient(0, pusherBar.y + pusherBar.height - 4, 0, pusherBar.y + pusherBar.height + 6);
-    frontGrad.addColorStop(0, '#555');
-    frontGrad.addColorStop(1, '#333');
-    ctx.fillStyle = frontGrad;
-    ctx.fillRect(barX + 2, pusherBar.y + pusherBar.height - 2, pusherWidth - 4, 8);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillRect(barX + 2, pusherBar.y + 2, pusherWidth - 4, 4);
     
     // Mega push indicator
     if (game.activeEvent?.type === 'megaPush') {
@@ -496,46 +475,17 @@ function render(game) {
 }
 
 function drawItem(item, platform) {
-    ctx.save();
-    
     // 2.5D depth effect: items scale larger as they approach the edge
     const depthRange = platform.edgeY - platform.y;
-    const depthFactor = Math.max(0, (item.y - platform.y) / depthRange);
+    const depthFactor = (item.y - platform.y) / depthRange;
     const scale = 0.85 + depthFactor * 0.3;
     
-    ctx.translate(item.x + (item.wobble || 0), item.y);
-    ctx.scale(scale, scale);
-    
-    // Only apply expensive shadow effects for special states
-    const isSpecial = item.type !== 'coin';
-    const isNearEdge = item.y + item.radius > platform.edgeY - 30;
-    const hasEffect = item.glow > 0 || item.flash > 0;
-    
-    if (isSpecial || isNearEdge || hasEffect) {
-        if (item.flash > 0) {
-            ctx.shadowColor = '#fff';
-            ctx.shadowBlur = 12 * item.flash;
-        } else if (isNearEdge) {
-            ctx.shadowColor = '#4ade80';
-            ctx.shadowBlur = 10;
-        } else if (isSpecial) {
-            ctx.shadowColor = item.color || '#fbbf24';
-            ctx.shadowBlur = 6;
-        } else if (item.glow > 0) {
-            ctx.shadowColor = item.color || '#fbbf24';
-            ctx.shadowBlur = 4 * item.glow;
-        }
-    }
-    // No shadow for regular coins (big perf win)
-    
-    // Draw icon
-    const size = item.radius * 1.8;
+    // Draw icon with scaling (no save/restore for perf)
+    const size = item.radius * 1.8 * scale;
     ctx.font = `${size}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(item.icon, 0, 0);
-    
-    ctx.restore();
+    ctx.fillText(item.icon, item.x + (item.wobble || 0), item.y);
 }
 
 function addNotification(text, color = '#fff', duration = 2000) {
