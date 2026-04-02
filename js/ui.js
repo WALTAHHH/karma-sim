@@ -214,6 +214,32 @@ export function appendText(text) {
     getContentEl().appendChild(p);
 }
 
+// Show outcome with reference to the choice made
+// Creates a sense of connection between choice and consequence
+export function showOutcomeWithChoice(outcomeText, choiceText = null) {
+    const contentEl = getContentEl();
+    contentEl.innerHTML = '';
+    
+    const container = document.createElement('div');
+    container.className = 'outcome-container';
+    
+    // Echo the choice made (if we have it)
+    if (choiceText) {
+        const echoEl = document.createElement('div');
+        echoEl.className = 'outcome-choice-echo';
+        echoEl.textContent = `You chose to ${choiceText.toLowerCase().replace(/^(to )?/, '')}...`;
+        container.appendChild(echoEl);
+    }
+    
+    // Show the outcome
+    const outcomeEl = document.createElement('p');
+    outcomeEl.className = 'outcome-description';
+    outcomeEl.textContent = outcomeText;
+    container.appendChild(outcomeEl);
+    
+    contentEl.appendChild(container);
+}
+
 // Display ASCII art in the content area
 export function showAsciiArt(art, className = '') {
     if (!art) return;
@@ -246,6 +272,7 @@ export function showEventArt(event) {
 export function showChoices(options, onChoice, tradeoffInfo = null) {
     const choicesEl = getChoicesEl();
     choicesEl.innerHTML = '';
+    
     options.forEach((option, index) => {
         const btn = document.createElement('button');
         btn.className = 'choice';
@@ -256,15 +283,34 @@ export function showChoices(options, onChoice, tradeoffInfo = null) {
         textEl.textContent = option.text;
         btn.appendChild(textEl);
 
-        // Add trade-off preview if available
-        if (option.preview && tradeoffInfo) {
-            const previewEl = createTradeoffPreview(option.preview, tradeoffInfo.clarityConfig);
-            if (previewEl) {
-                btn.appendChild(previewEl);
-            }
+        // Add preview hint (shows what this choice is about)
+        const previewText = option.preview?.description || null;
+        if (previewText) {
+            const previewEl = document.createElement('div');
+            previewEl.className = 'tradeoff-preview';
+            const descEl = document.createElement('span');
+            descEl.className = 'preview-desc';
+            descEl.textContent = previewText;
+            previewEl.appendChild(descEl);
+            btn.appendChild(previewEl);
         }
 
-        btn.addEventListener('click', () => onChoice(index));
+        // Commitment flow: click triggers a brief "committing" state before resolving
+        btn.addEventListener('click', () => {
+            // Mark this choice as committing
+            btn.classList.add('committing');
+            choicesEl.classList.add('has-committed');
+            
+            // Store the choice text for the outcome to reference
+            window._lastChoiceText = option.text;
+            window._lastChoicePreview = previewText;
+            
+            // Brief pause to let the commitment feel weighty, then resolve
+            setTimeout(() => {
+                onChoice(index);
+            }, 400);
+        });
+        
         choicesEl.appendChild(btn);
     });
 }

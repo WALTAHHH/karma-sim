@@ -126,6 +126,83 @@
             width: 100%;
         }
 
+        /* Enhanced choice states - making choices feel weighty */
+        .choice {
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hover state - hint at what's at stake */
+        .choice:hover .preview-desc {
+            color: #999;
+            opacity: 1;
+        }
+
+        .choice:hover::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #444;
+            transition: background 0.2s;
+        }
+
+        /* Commitment state - the moment before the choice resolves */
+        .choice.committing {
+            pointer-events: none;
+            border-color: #888;
+            background: #1a1a1a;
+        }
+
+        .choice.committing::before {
+            width: 100%;
+            background: linear-gradient(90deg, rgba(100,100,100,0.3) 0%, transparent 100%);
+            animation: commitSweep 0.4s ease-out;
+        }
+
+        .choice.committing .choice-text {
+            color: #fff;
+        }
+
+        .choice.committing .preview-desc {
+            color: #aaa;
+        }
+
+        @keyframes commitSweep {
+            0% { width: 3px; opacity: 1; }
+            100% { width: 100%; opacity: 0.5; }
+        }
+
+        /* Other choices fade when one is committed */
+        .choices.has-committed .choice:not(.committing) {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Outcome display that references the choice */
+        .outcome-container {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .outcome-choice-echo {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+
+        .outcome-description {
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
         /* Hidden cost revelation overlay */
         .hidden-cost-overlay {
             position: fixed;

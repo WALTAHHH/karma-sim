@@ -1,6 +1,7 @@
 // Main game loop and state machine
 
 import { getKarma, adjustKarma, spendKarma } from './karma.js';
+import { resetChoiceMemory, rememberChoice, getCallbackText } from './choiceMemory.js';
 import { generateLife, getStartDescription, getEndDescription, applyJob, checkForChildren, generateDescendantContext, recordMigration } from './life.js';
 import {
     selectEvent,
@@ -285,6 +286,9 @@ function startLife() {
     state.careerSelected = false;
     state.pendingHiddenCosts = [];
     state.hiddenCostsRevealed = 0;
+    
+    // Reset choice memory for new life
+    resetChoiceMemory();
 
     // Track region in persistent tracking
     persistentTracking.allRegions.add(state.life.region.id);
@@ -469,7 +473,13 @@ function showEvent(event) {
     state.trackedData.allEvents.add(event.id);
     persistentTracking.allEvents.add(event.id);
 
-    ui.showText(event.prompt);
+    // Check for callback to past choices
+    const callbackText = getCallbackText(event.id, state.currentStage);
+    if (callbackText) {
+        ui.showText([callbackText, '', event.prompt]);
+    } else {
+        ui.showText(event.prompt);
+    }
 
     // Get trade-off info for UI
     const tradeoffInfo = getEventTradeoffInfo(event);
@@ -552,6 +562,13 @@ function resolveEvent(optionIndex) {
     // Apply effects
     const oldLife = { ...state.life };
     state.life = applyOutcome(state.life, outcome);
+    
+    // Record significant choices for later callbacks
+    // Only record choice events (not forced events)
+    if (event.type === 'choice' && event.options.length > 1) {
+        const tags = outcome.tagAxis ? Object.keys(outcome.tagAxis) : [];
+        rememberChoice(event.id, option.text, state.currentStage, tags);
+    }
 
     // Queue hidden cost if present
     if (result.hiddenCost) {
@@ -617,17 +634,22 @@ function resolveEvent(optionIndex) {
     // Process decision tags
     const newTags = processTagsFromOutcome(outcome);
 
+    // Get the choice text that was stored during commitment
+    const choiceText = window._lastChoiceText || null;
+    window._lastChoiceText = null;
+    window._lastChoicePreview = null;
+    
     // Show outcome (with tag notification if earned)
     if (newTags.length > 0) {
         // Show tag notification first, then continue to outcome
         showTagNotifications(newTags, () => {
-            ui.showText(outcome.description);
+            ui.showOutcomeWithChoice(outcome.description, choiceText);
             ui.showButton('Continue', nextEvent);
             updateDebugPanel(state);
             updatePanels();
         });
     } else {
-        ui.showText(outcome.description);
+        ui.showOutcomeWithChoice(outcome.description, choiceText);
         ui.showButton('Continue', nextEvent);
         updateDebugPanel(state);
         updatePanels();
