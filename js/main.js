@@ -601,9 +601,9 @@ function resolveEvent(optionIndex) {
     // Also capture choice events (type: 'choice') as they represent player agency
     const hasKarmaImpact = outcome.karma !== 0 && outcome.karma !== undefined;
     const hasStatImpact = outcome.effects && Object.values(outcome.effects).some(v => v !== 0);
-    const isChoiceEvent = state.currentEvent && state.currentEvent.type === 'choice';
+    const isMomentWorthy = state.currentEvent && state.currentEvent.type === 'choice';
     
-    if (hasKarmaImpact || hasStatImpact || isChoiceEvent) {
+    if (hasKarmaImpact || hasStatImpact || isMomentWorthy) {
         state.moments.push(outcome.description);
     }
 
