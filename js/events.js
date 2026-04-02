@@ -71,31 +71,56 @@ export const events = [
     {
         id: 'early_illness',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         prompt: 'A fever takes hold in your early years.',
-        options: [{
-            text: 'Endure',
-            outcomes: [
-                { weight: 60, effects: { health: -1 }, karma: 0, description: 'The illness leaves you weakened.' },
-                { weight: 30, effects: {}, karma: 0, description: 'You recover fully.' },
-                { weight: 10, effects: { health: +1 }, karma: 1, description: 'You emerge stronger than before.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Rest and recover',
+                preview: { description: 'Take the time to heal properly' },
+                outcomes: [
+                    { weight: 50, effects: {}, karma: 0, description: 'You recover fully with patience.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Rest makes you stronger.' },
+                    { weight: 15, effects: { connections: -1 }, karma: 0, description: 'You miss time with friends while bedridden.' }
+                ]
+            },
+            {
+                text: 'Push through it',
+                preview: { description: 'Try to carry on as normal' },
+                outcomes: [
+                    { weight: 40, effects: { health: -1 }, karma: 0, description: 'The illness leaves you weakened.' },
+                    { weight: 30, effects: {}, karma: 0, description: 'Sheer will pulls you through.' },
+                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'You emerge tougher than before.', tagAxis: { risk_vs_safety: 1 } },
+                    { weight: 10, effects: { health: -2 }, karma: 0, description: 'You push too hard. It gets worse.' }
+                ]
+            }
+        ]
     },
     {
         id: 'family_hardship',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         requirements: { wealth: '<4' },
         prompt: 'Your family faces financial strain.',
-        options: [{
-            text: 'Weather the storm',
-            outcomes: [
-                { weight: 50, effects: { wealth: -1 }, karma: 0, description: 'Times grow harder.' },
-                { weight: 35, effects: {}, karma: 0, description: 'You scrape by.' },
-                { weight: 15, effects: { connections: +1 }, karma: 1, description: 'Neighbors help you through.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Help where you can',
+                preview: { description: 'Pitch in to support the family' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Your help is appreciated. Family bonds strengthen.', tagAxis: { family_vs_career: 1, self_vs_others: 1 } },
+                    { weight: 35, effects: { education: -1 }, karma: 1, description: 'Less time for school, but you learn other lessons.', tagAxis: { family_vs_career: 1 } },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'The burden weighs on you.' }
+                ]
+            },
+            {
+                text: 'Focus on your studies',
+                preview: { description: 'Keep your head down and work hard at school' },
+                outcomes: [
+                    { weight: 50, effects: { education: +1 }, karma: 0, description: 'School becomes your escape.', tagAxis: { family_vs_career: -1 } },
+                    { weight: 30, effects: {}, karma: 0, description: 'You scrape by.' },
+                    { weight: 20, effects: { connections: -1 }, karma: -1, description: 'Your distance is noticed.', tagAxis: { self_vs_others: -1 } }
+                ]
+            }
+        ]
     },
     {
         id: 'schoolyard_conflict',
@@ -171,17 +196,29 @@ export const events = [
     {
         id: 'family_windfall',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         requirements: { wealth: '<5' },
         prompt: 'Unexpected fortune comes to your family.',
-        options: [{
-            text: 'Experience change',
-            outcomes: [
-                { weight: 40, effects: { wealth: +1 }, karma: 0, description: 'Your circumstances improve.' },
-                { weight: 40, effects: { wealth: +1, connections: -1 }, karma: 0, description: 'Money changes things. Not all for the better.' },
-                { weight: 20, effects: {}, karma: 0, description: 'Easy come, easy go.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Embrace the change',
+                preview: { description: 'Let the good fortune transform your life' },
+                outcomes: [
+                    { weight: 45, effects: { wealth: +1 }, karma: 0, description: 'Your circumstances improve.' },
+                    { weight: 35, effects: { wealth: +1, connections: -1 }, karma: 0, description: 'Money changes things. Not all for the better.' },
+                    { weight: 20, effects: { wealth: +1, education: +1 }, karma: 0, description: 'New opportunities open up.' }
+                ]
+            },
+            {
+                text: 'Stay grounded',
+                preview: { description: 'Don\'t let money change who you are' },
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'You keep your old friends close.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 30, effects: {}, karma: 0, description: 'Easy come, easy go. But you remain yourself.' },
+                    { weight: 20, effects: { wealth: +1, connections: +1 }, karma: 1, description: 'You share the good fortune. Bonds deepen.' }
+                ]
+            }
+        ]
     },
     {
         id: 'discovery_talent',
@@ -237,16 +274,28 @@ export const events = [
     {
         id: 'first_loss',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         prompt: 'Someone close to you passes away. Your first brush with mortality.',
-        options: [{
-            text: 'Grieve',
-            outcomes: [
-                { weight: 45, effects: {}, karma: 0, description: 'You learn that loss is part of life.' },
-                { weight: 30, effects: { connections: +1 }, karma: 1, description: 'Family draws closer in sorrow.' },
-                { weight: 25, effects: { health: -1 }, karma: 0, description: 'The sadness settles deep within you.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Let yourself grieve',
+                preview: { description: 'Feel the loss fully' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Family draws closer in shared sorrow.', tagAxis: { social_vs_solitary: 1 } },
+                    { weight: 35, effects: {}, karma: 0, description: 'You learn that loss is part of life.' },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'The sadness settles deep within you.' }
+                ]
+            },
+            {
+                text: 'Stay strong for others',
+                preview: { description: 'Hold back your tears' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1 }, karma: 1, description: 'Others lean on your strength.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The unexpressed grief weighs on you.', tagAxis: { social_vs_solitary: -1 } },
+                    { weight: 25, effects: {}, karma: 0, description: 'You learn to carry on despite the pain.' }
+                ]
+            }
+        ]
     },
     {
         id: 'playground_dare',
@@ -277,16 +326,28 @@ export const events = [
     {
         id: 'secret_hideaway',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         prompt: 'You discover a secret place—somewhere all your own.',
-        options: [{
-            text: 'Make it yours',
-            outcomes: [
-                { weight: 50, effects: {}, karma: 0, description: 'A refuge when the world overwhelms.' },
-                { weight: 30, effects: { health: +1 }, karma: 0, description: 'Peace settles into your bones.' },
-                { weight: 20, effects: { connections: +1 }, karma: 1, description: 'You share it with someone special.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Keep it to yourself',
+                preview: { description: 'A sanctuary for solitude' },
+                outcomes: [
+                    { weight: 50, effects: { health: +1 }, karma: 0, description: 'Peace settles into your bones.', tagAxis: { social_vs_solitary: -1 } },
+                    { weight: 35, effects: {}, karma: 0, description: 'A refuge when the world overwhelms.' },
+                    { weight: 15, effects: { connections: -1 }, karma: 0, description: 'You retreat there more and more.' }
+                ]
+            },
+            {
+                text: 'Share it with a friend',
+                preview: { description: 'Make it a place for two' },
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'A shared secret deepens the bond.', tagAxis: { social_vs_solitary: 1 } },
+                    { weight: 30, effects: { connections: +1, health: +1 }, karma: 1, description: 'Joy is better shared.' },
+                    { weight: 20, effects: { connections: -1 }, karma: 0, description: 'They tell others. The magic fades.' }
+                ]
+            }
+        ]
     },
     {
         id: 'helping_stranger',
@@ -342,16 +403,28 @@ export const events = [
     {
         id: 'unexpected_move',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         prompt: 'Your family must relocate. Everything familiar slips away.',
-        options: [{
-            text: 'Adapt to change',
-            outcomes: [
-                { weight: 40, effects: { connections: -1 }, karma: 0, description: 'Old friends become memories.' },
-                { weight: 35, effects: { connections: +1 }, karma: 0, description: 'New place, new friends.' },
-                { weight: 25, effects: { education: +1 }, karma: 0, description: 'The new school proves better.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Embrace the fresh start',
+                preview: { description: 'See it as an adventure' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 0, description: 'New place, new friends.', tagAxis: { roots_vs_wings: 1, tradition_vs_change: 1 } },
+                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'The new school proves better.' },
+                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'The change energizes you.' }
+                ]
+            },
+            {
+                text: 'Hold onto what was',
+                preview: { description: 'Keep your old connections alive' },
+                outcomes: [
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'Old friends become memories.', tagAxis: { roots_vs_wings: -1 } },
+                    { weight: 35, effects: {}, karma: 0, description: 'You write letters. Some reply.' },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'The longing for home weighs on you.' }
+                ]
+            }
+        ]
     },
     {
         id: 'mentor_figure',
@@ -507,31 +580,55 @@ export const events = [
     {
         id: 'health_scare',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         prompt: 'Your body sends a warning.',
-        options: [{
-            text: 'Face it',
-            outcomes: [
-                { weight: 40, effects: { health: -1 }, karma: 0, description: 'The damage is done.' },
-                { weight: 35, effects: {}, karma: 0, description: 'A close call, nothing more.' },
-                { weight: 25, effects: { health: -1, wealth: -1 }, karma: 0, description: 'Treatment is costly.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Take it seriously',
+                preview: { description: 'Seek proper care and make changes' },
+                outcomes: [
+                    { weight: 45, effects: { wealth: -1 }, karma: 0, description: 'Treatment is costly, but you catch it early.' },
+                    { weight: 35, effects: { health: +1 }, karma: 1, description: 'A wake-up call heeded. You make lasting changes.', tagAxis: { risk_vs_safety: -1 } },
+                    { weight: 20, effects: {}, karma: 0, description: 'False alarm, but you learned to listen.' }
+                ]
+            },
+            {
+                text: 'Push through it',
+                preview: { description: 'Ignore it and carry on' },
+                outcomes: [
+                    { weight: 35, effects: {}, karma: 0, description: 'A close call, nothing more.' },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The damage is done.', tagAxis: { risk_vs_safety: 1 } },
+                    { weight: 30, effects: { health: -2 }, karma: -1, description: 'Ignoring the signs makes it worse.' }
+                ]
+            }
+        ]
     },
     {
         id: 'unexpected_inheritance',
         stage: 'young_adult',
-        type: 'forced',
-        prompt: 'Word comes of a distant relative\'s passing.',
-        options: [{
-            text: 'Receive the news',
-            outcomes: [
-                { weight: 35, effects: { wealth: +1 }, karma: 0, description: 'A modest inheritance arrives.' },
-                { weight: 40, effects: {}, karma: 0, description: 'The estate was already claimed.' },
-                { weight: 15, effects: { wealth: +2 }, karma: 0, description: 'More than you expected.' },
-                { weight: 10, effects: { connections: -1 }, karma: -1, description: 'Family disputes follow.' }
-            ]
-        }]
+        type: 'choice',
+        prompt: 'Word comes of a distant relative\'s passing. There may be an inheritance.',
+        options: [
+            {
+                text: 'Claim your share',
+                preview: { description: 'Assert your rights to the estate' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: +1 }, karma: 0, description: 'A modest inheritance arrives.' },
+                    { weight: 25, effects: { wealth: +2 }, karma: 0, description: 'More than you expected.' },
+                    { weight: 20, effects: { connections: -1 }, karma: -1, description: 'Family disputes follow.', tagAxis: { self_vs_others: -1 } },
+                    { weight: 15, effects: {}, karma: 0, description: 'The estate was already claimed.' }
+                ]
+            },
+            {
+                text: 'Let others have it',
+                preview: { description: 'Step aside for family who need it more' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Your generosity is remembered.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 35, effects: {}, karma: 1, description: 'You make peace with the decision.' },
+                    { weight: 20, effects: { wealth: +1 }, karma: 1, description: 'Others insist you take a share anyway.' }
+                ]
+            }
+        ]
     },
     {
         id: 'mentor_appears',
@@ -659,17 +756,29 @@ export const events = [
     {
         id: 'health_crisis',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         prompt: 'Your health demands attention.',
-        options: [{
-            text: 'Confront reality',
-            outcomes: [
-                { weight: 35, effects: { health: -1, wealth: -1 }, karma: 0, description: 'Treatment drains resources.' },
-                { weight: 30, effects: { health: -1 }, karma: 0, description: 'A new normal emerges.' },
-                { weight: 25, effects: {}, karma: 1, description: 'Caught in time.' },
-                { weight: 10, effects: { health: +1 }, karma: 1, description: 'A wake-up call heeded.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Prioritize treatment',
+                preview: { description: 'Focus on recovery whatever the cost' },
+                outcomes: [
+                    { weight: 40, effects: { health: +1, wealth: -1 }, karma: 0, description: 'Expensive, but you recover well.' },
+                    { weight: 35, effects: { wealth: -1 }, karma: 0, description: 'Treatment drains resources, but stabilizes things.' },
+                    { weight: 25, effects: {}, karma: 1, description: 'Caught in time. You beat it.' }
+                ]
+            },
+            {
+                text: 'Minimize disruption',
+                preview: { description: 'Try to maintain normal life' },
+                outcomes: [
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'A new normal emerges.', tagAxis: { risk_vs_safety: 1 } },
+                    { weight: 30, effects: {}, karma: 0, description: 'You manage it day by day.' },
+                    { weight: 25, effects: { health: -2 }, karma: 0, description: 'Delay makes it worse.' },
+                    { weight: 10, effects: { connections: +1 }, karma: 0, description: 'Others rally to support you.' }
+                ]
+            }
+        ]
     },
     {
         id: 'old_friend_returns',
@@ -1385,16 +1494,29 @@ export const events = [
     {
         id: 'body_slowing',
         stage: 'late',
-        type: 'forced',
+        type: 'choice',
         prompt: 'Age makes itself known.',
-        options: [{
-            text: 'Accept the change',
-            outcomes: [
-                { weight: 45, effects: { health: -1 }, karma: 0, description: 'The body fades.' },
-                { weight: 35, effects: {}, karma: 1, description: 'You adapt gracefully.' },
-                { weight: 20, effects: { health: -1, connections: +1 }, karma: 1, description: 'Vulnerability brings others closer.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Accept it gracefully',
+                preview: { description: 'Adapt to your changing body' },
+                outcomes: [
+                    { weight: 45, effects: {}, karma: 1, description: 'You adapt gracefully.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Vulnerability brings others closer.' },
+                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'Acceptance brings peace.' }
+                ]
+            },
+            {
+                text: 'Fight against it',
+                preview: { description: 'Refuse to slow down' },
+                outcomes: [
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The body fades despite your efforts.', tagAxis: { risk_vs_safety: 1 } },
+                    { weight: 35, effects: {}, karma: 0, description: 'Determination keeps you going.' },
+                    { weight: 20, effects: { health: -2 }, karma: 0, description: 'Pushing too hard takes its toll.' },
+                    { weight: 10, effects: { health: +1 }, karma: 1, description: 'Defiance works. You stay strong.' }
+                ]
+            }
+        ]
     },
     {
         id: 'legacy_question',
@@ -1472,31 +1594,55 @@ export const events = [
     {
         id: 'wisdom_sought',
         stage: 'late',
-        type: 'forced',
+        type: 'choice',
         requirements: { education: '>3' },
         prompt: 'Others seek your perspective on important matters.',
-        options: [{
-            text: 'Offer what you know',
-            outcomes: [
-                { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Your words carry weight.' },
-                { weight: 30, effects: {}, karma: 0, description: 'They listen politely.' },
-                { weight: 20, effects: { connections: -1 }, karma: 0, description: 'The world has moved on from your views.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Share your wisdom freely',
+                preview: { description: 'Pass on what you\'ve learned' },
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Your words carry weight.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 30, effects: { health: -1 }, karma: 1, description: 'Teaching takes energy, but fills you with purpose.' },
+                    { weight: 20, effects: { connections: +1, education: +1 }, karma: 2, description: 'In teaching, you learn something new yourself.' }
+                ]
+            },
+            {
+                text: 'Keep your own counsel',
+                preview: { description: 'Let them figure it out themselves' },
+                outcomes: [
+                    { weight: 45, effects: {}, karma: 0, description: 'They listen politely to others instead.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'You conserve your energy.', tagAxis: { social_vs_solitary: -1 } },
+                    { weight: 20, effects: { connections: -1 }, karma: -1, description: 'Your silence is noted.' }
+                ]
+            }
+        ]
     },
     {
         id: 'health_decline',
         stage: 'late',
-        type: 'forced',
+        type: 'choice',
         prompt: 'The inevitable draws closer.',
-        options: [{
-            text: 'Face what comes',
-            outcomes: [
-                { weight: 40, effects: { health: -1 }, karma: 0, description: 'Each day a little harder.' },
-                { weight: 30, effects: { health: -2 }, karma: 0, description: 'A sharp decline.' },
-                { weight: 30, effects: {}, karma: 1, description: 'A reprieve, for now.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Seek every treatment',
+                preview: { description: 'Fight for every day' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: -1 }, karma: 0, description: 'Treatment buys time, at a cost.' },
+                    { weight: 35, effects: {}, karma: 1, description: 'A reprieve, for now.' },
+                    { weight: 25, effects: { health: -1, connections: +1 }, karma: 0, description: 'Others rally around you.' }
+                ]
+            },
+            {
+                text: 'Accept what comes',
+                preview: { description: 'Focus on quality, not quantity' },
+                outcomes: [
+                    { weight: 40, effects: { health: -1 }, karma: 0, description: 'Each day a little harder.' },
+                    { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Peace attracts loved ones closer.' },
+                    { weight: 25, effects: {}, karma: 1, description: 'Acceptance brings calm.' }
+                ]
+            }
+        ]
     },
     {
         id: 'final_kindness',
@@ -1525,16 +1671,28 @@ export const events = [
     {
         id: 'memories',
         stage: 'late',
-        type: 'forced',
+        type: 'choice',
         prompt: 'The past visits often now.',
-        options: [{
-            text: 'Reflect',
-            outcomes: [
-                { weight: 40, effects: {}, karma: 1, description: 'Peace with what was.' },
-                { weight: 35, effects: { health: -1 }, karma: 0, description: 'Some memories hurt.' },
-                { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Sharing stories brings others near.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Share your stories',
+                preview: { description: 'Let others into your past' },
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Sharing stories brings others near.', tagAxis: { social_vs_solitary: 1 } },
+                    { weight: 30, effects: {}, karma: 1, description: 'The telling brings peace.' },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'Reliving old pain takes its toll.' }
+                ]
+            },
+            {
+                text: 'Keep them to yourself',
+                preview: { description: 'Some things are just for you' },
+                outcomes: [
+                    { weight: 45, effects: {}, karma: 0, description: 'The past stays where it belongs.', tagAxis: { social_vs_solitary: -1 } },
+                    { weight: 35, effects: { health: +1 }, karma: 1, description: 'Private reflection brings peace.' },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'Some memories hurt when held alone.' }
+                ]
+            }
+        ]
     },
 
     // ============================================
