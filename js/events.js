@@ -854,16 +854,37 @@ export const events = [
     {
         id: 'reputation_test',
         stage: 'middle',
-        type: 'forced',
-        prompt: 'Rumors spread that could harm your standing.',
-        options: [{
-            text: 'Face the talk',
-            outcomes: [
-                { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Some believe the worst.' },
-                { weight: 40, effects: {}, karma: 0, description: 'It blows over.' },
-                { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Your true character shines through.' }
-            ]
-        }]
+        type: 'choice',
+        prompt: 'Rumors spread that could harm your standing. Whispers follow you.',
+        options: [
+            {
+                text: 'Address it head-on',
+                preview: { description: 'Confront the gossip publicly' },
+                outcomes: [
+                    { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Your directness earns respect. The truth wins out.' },
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Your defense sounds desperate. Some believe the worst.' },
+                    { weight: 30, effects: {}, karma: 0, description: 'A stalemate. Neither vindication nor ruin.' }
+                ]
+            },
+            {
+                text: 'Let it blow over',
+                preview: { description: 'Rise above the noise' },
+                outcomes: [
+                    { weight: 40, effects: {}, karma: 0, description: 'Time proves your character. The talk fades.' },
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Your silence is taken as guilt.' },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'Holding your tongue while being maligned takes a toll.' }
+                ]
+            },
+            {
+                text: 'Work behind the scenes',
+                preview: { description: 'Quietly counter the narrative' },
+                outcomes: [
+                    { weight: 35, effects: { connections: +1 }, karma: 0, description: 'Allies emerge. The truth spreads through trusted channels.' },
+                    { weight: 35, effects: { wealth: -1 }, karma: 0, description: 'Rebuilding reputation requires favors and resources.' },
+                    { weight: 30, effects: { connections: -1 }, karma: -1, description: 'Your maneuvering is noticed. It looks calculated.' }
+                ]
+            }
+        ]
     },
 
     // === MIGRATION EVENTS ===
@@ -992,17 +1013,38 @@ export const events = [
     {
         id: 'war_refugee',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         special: 'migration',
-        prompt: 'War erupts. Bombs fall. Your neighborhood is no longer safe.',
-        options: [{
-            text: 'Flee to safety',
-            outcomes: [
-                { weight: 40, effects: { wealth: -2, connections: -2, health: -1 }, karma: 0, description: 'You escape with nothing but your life.', special: 'migrate' },
-                { weight: 35, effects: { wealth: -1, connections: -2 }, karma: 0, description: 'A harrowing journey to uncertain safety.', special: 'migrate' },
-                { weight: 25, effects: { connections: -1 }, karma: 1, description: 'Strangers show kindness along the way.', special: 'migrate' }
-            ]
-        }]
+        prompt: 'War erupts. Bombs fall. Your neighborhood is no longer safe. There is no staying.',
+        options: [
+            {
+                text: 'Flee immediately',
+                preview: { description: 'Run with nothing but your life' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: -2, connections: -2 }, karma: 0, description: 'You escape with nothing but your life. Everything else burns.', special: 'migrate' },
+                    { weight: 35, effects: { connections: -2, health: -1 }, karma: 0, description: 'The harrowing journey leaves marks that never fade.', special: 'migrate' },
+                    { weight: 25, effects: { connections: -1, health: +1 }, karma: 0, description: 'Speed saves you. You reach safety while others still debate.', special: 'migrate' }
+                ]
+            },
+            {
+                text: 'Gather what you can first',
+                preview: { description: 'Risk delay to save something' },
+                outcomes: [
+                    { weight: 35, effects: { wealth: -1, connections: -2, health: -1 }, karma: 0, description: 'You save some essentials. The delay costs you.', special: 'migrate' },
+                    { weight: 35, effects: { wealth: -1, connections: -1 }, karma: 0, description: 'Documents, photos, heirlooms. Not everything, but something.', special: 'migrate' },
+                    { weight: 30, effects: { health: -2, connections: -1 }, karma: 0, description: 'You waited too long. The price was almost too high.', special: 'migrate' }
+                ]
+            },
+            {
+                text: 'Help others escape first',
+                preview: { description: 'The elderly, the children, the trapped' },
+                outcomes: [
+                    { weight: 35, effects: { wealth: -2, connections: +1, health: -1 }, karma: 3, description: 'You lose everything material. But faces remember you.', special: 'migrate', tagAxis: { self_vs_others: 2 } },
+                    { weight: 35, effects: { connections: -1, health: -2 }, karma: 2, description: 'The cost is severe. Some you helped did not make it anyway.', special: 'migrate', tagAxis: { self_vs_others: 1 } },
+                    { weight: 30, effects: { connections: +1 }, karma: 2, description: 'Together, somehow, more of you survive the crossing.', special: 'migrate', tagAxis: { self_vs_others: 1 }, grantsTag: 'generous' }
+                ]
+            }
+        ]
     },
     {
         id: 'economic_collapse',
@@ -1071,17 +1113,38 @@ export const events = [
     {
         id: 'environmental_displacement',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         special: 'migration',
-        prompt: 'The land can no longer sustain life. Drought, floods, or disaster have made home uninhabitable.',
-        options: [{
-            text: 'Relocate to survivable land',
-            outcomes: [
-                { weight: 40, effects: { wealth: -1, connections: -1 }, karma: 0, description: 'You find new ground to stand on.', special: 'migrate' },
-                { weight: 35, effects: { connections: -2, health: -1 }, karma: 0, description: 'The journey is long and the welcome uncertain.', special: 'migrate' },
-                { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Fellow displaced souls become family.', special: 'migrate' }
-            ]
-        }]
+        prompt: 'The land can no longer sustain life. Drought, floods, or disaster have made home uninhabitable. There is no future here.',
+        options: [
+            {
+                text: 'Leave for better land',
+                preview: { description: 'Seek somewhere you can survive' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: -1, connections: -1 }, karma: 0, description: 'You find new ground to stand on. Not home, but livable.', special: 'migrate' },
+                    { weight: 35, effects: { connections: -2, health: -1 }, karma: 0, description: 'The journey is long. The welcome, uncertain.', special: 'migrate' },
+                    { weight: 25, effects: { connections: +1 }, karma: 0, description: 'Fellow displaced souls become family along the way.', special: 'migrate' }
+                ]
+            },
+            {
+                text: 'Organize a community exodus',
+                preview: { description: 'We go together or not at all' },
+                outcomes: [
+                    { weight: 35, effects: { connections: +1, wealth: -1 }, karma: 2, description: 'The community survives intact. A new village takes root.', special: 'migrate', tagAxis: { self_vs_others: 1 } },
+                    { weight: 35, effects: { health: -1, connections: +1 }, karma: 1, description: 'The burden of leadership weighs heavy. But bonds hold.', special: 'migrate' },
+                    { weight: 30, effects: { wealth: -2 }, karma: 1, description: 'Organizing the exodus drains your resources. Others benefit more than you.', special: 'migrate', tagAxis: { self_vs_others: 1 } }
+                ]
+            },
+            {
+                text: 'Stay until the bitter end',
+                preview: { description: 'This is home. Even dying, it is home.' },
+                outcomes: [
+                    { weight: 35, effects: { health: -2 }, karma: 0, description: 'The land takes what it cannot give. You diminish with it.' },
+                    { weight: 35, effects: { wealth: -1, health: -1, connections: -1 }, karma: 0, description: 'Eventually, you must leave anyway. Later. Weaker. Alone.', special: 'migrate' },
+                    { weight: 30, effects: { health: -1 }, karma: 1, description: 'You witness the end. Someone had to bear witness.', tagAxis: { roots_vs_wings: -1 } }
+                ]
+            }
+        ]
     },
 
     // Pull Events - Opportunities drawing people forward
@@ -1186,17 +1249,38 @@ export const events = [
     {
         id: 'culture_shock',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         special: 'post_migration',
-        prompt: 'Everything is strange here. The customs, the assumptions, the unwritten rules you never learned.',
-        options: [{
-            text: 'Navigate the confusion',
-            outcomes: [
-                { weight: 40, effects: { health: -1, education: +1 }, karma: 0, description: 'Exhausting, but you learn.' },
-                { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Misunderstandings isolate you.' },
-                { weight: 25, effects: { education: +1 }, karma: 0, description: 'A steep learning curve, but you adapt.' }
-            ]
-        }]
+        prompt: 'Everything is strange here. The customs, the assumptions, the unwritten rules you never learned. You are visibly lost.',
+        options: [
+            {
+                text: 'Throw yourself into learning',
+                preview: { description: 'Immerse despite the exhaustion' },
+                outcomes: [
+                    { weight: 40, effects: { education: +1, health: -1 }, karma: 0, description: 'Exhausting, but you learn faster than most.' },
+                    { weight: 35, effects: { education: +1, connections: +1 }, karma: 1, description: 'Your effort impresses locals. They help.' },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'The constant vigilance wears you down.' }
+                ]
+            },
+            {
+                text: 'Seek out others like you',
+                preview: { description: 'Find fellow outsiders' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 0, description: 'A community of the displaced. You belong somewhere.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'The relief of being understood, even briefly.' },
+                    { weight: 20, effects: { education: -1 }, karma: 0, description: 'You never quite leave the bubble. Integration stalls.' }
+                ]
+            },
+            {
+                text: 'Withdraw and observe',
+                preview: { description: 'Watch from the margins' },
+                outcomes: [
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'Misunderstandings isolate you further.' },
+                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'Silence teaches you. You learn to read the room.' },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'Loneliness seeps in. The strangeness never quite fades.' }
+                ]
+            }
+        ]
     },
     {
         id: 'language_barrier',
@@ -1255,32 +1339,74 @@ export const events = [
     {
         id: 'discrimination_faced',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         special: 'post_migration',
         prompt: 'Your accent, your name, your appearance mark you as different. Some people make sure you know it.',
-        options: [{
-            text: 'Endure and persist',
-            outcomes: [
-                { weight: 40, effects: { health: -1, education: +1 }, karma: 1, description: 'You prove yourself through achievement.' },
-                { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Some doors close, others open.' },
-                { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Allies emerge among fair-minded locals.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Prove them wrong',
+                preview: { description: 'Excel despite the barriers' },
+                outcomes: [
+                    { weight: 40, effects: { education: +1, health: -1 }, karma: 1, description: 'You outwork everyone. Achievement silences some critics.' },
+                    { weight: 35, effects: { wealth: +1 }, karma: 0, description: 'Success is the best response. But it should not have been necessary.' },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'The constant pressure to perform twice as well takes its toll.' }
+                ]
+            },
+            {
+                text: 'Push back directly',
+                preview: { description: 'Confront discrimination when it happens' },
+                outcomes: [
+                    { weight: 35, effects: { connections: +1 }, karma: 2, description: 'Your courage inspires allies to emerge.', tagAxis: { risk_vs_safety: 1 } },
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Some doors close permanently. You are labeled difficult.', tagAxis: { risk_vs_safety: 1 } },
+                    { weight: 30, effects: { health: -1 }, karma: 1, description: 'The fight wears you down. But some battles must be fought.', tagAxis: { risk_vs_safety: 1 } }
+                ]
+            },
+            {
+                text: 'Find your people',
+                preview: { description: 'Seek spaces where you belong' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1, health: +1 }, karma: 0, description: 'You build a world within the world. Safe harbor.' },
+                    { weight: 35, effects: { connections: +1 }, karma: 0, description: 'Community sustains you when the wider world wounds.' },
+                    { weight: 20, effects: { wealth: -1 }, karma: 0, description: 'Staying in safe spaces limits opportunity. A trade-off.' }
+                ]
+            }
+        ]
     },
     {
         id: 'integration_milestone',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         special: 'post_migration',
-        prompt: 'After years of effort, you feel at home. The language flows naturally. The customs are second nature.',
-        options: [{
-            text: 'Celebrate the milestone',
-            outcomes: [
-                { weight: 50, effects: { health: +1, connections: +1 }, karma: 0, description: 'Truly bicultural now.' },
-                { weight: 30, effects: { education: +1 }, karma: 0, description: 'Two perspectives enrich your worldview.' },
-                { weight: 20, effects: { wealth: +1, connections: +1 }, karma: 1, description: 'Integration opens every door.' }
-            ]
-        }]
+        prompt: 'After years of effort, you feel at home. The language flows. The customs are second nature. A milestone.',
+        options: [
+            {
+                text: 'Celebrate how far you have come',
+                preview: { description: 'Mark the achievement' },
+                outcomes: [
+                    { weight: 50, effects: { health: +1, connections: +1 }, karma: 1, description: 'Truly bicultural now. Both worlds live in you.' },
+                    { weight: 30, effects: { connections: +1 }, karma: 0, description: 'Recognition from both communities. You are a bridge.' },
+                    { weight: 20, effects: { wealth: +1, connections: +1 }, karma: 0, description: 'Integration opens every door. The hard years paid off.' }
+                ]
+            },
+            {
+                text: 'Reflect on what was lost',
+                preview: { description: 'Remember the cost of becoming new' },
+                outcomes: [
+                    { weight: 45, effects: { education: +1 }, karma: 0, description: 'Two perspectives enrich your worldview. Neither is fully home.' },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The old self fades. You mourn who you used to be.' },
+                    { weight: 20, effects: { connections: +1 }, karma: 1, description: 'Honesty about the cost helps others on the same path.' }
+                ]
+            },
+            {
+                text: 'Reach back to help others',
+                preview: { description: 'Guide newcomers through what you survived' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 2, description: 'You become the mentor you needed. The cycle improves.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 35, effects: { health: -1, connections: +1 }, karma: 1, description: 'Reliving the struggle through others reopens wounds. But it matters.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 20, effects: { connections: +2 }, karma: 2, description: 'A community forms around your guidance. You belong fully now.', tagAxis: { self_vs_others: 1 } }
+                ]
+            }
+        ]
     },
     {
         id: 'nostalgia_weighs',
@@ -1314,18 +1440,39 @@ export const events = [
     {
         id: 'between_two_worlds',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         special: 'second_generation',
         themes: ['migration', 'identity'],
-        prompt: 'At home, one language and culture. At school, another. You live between two worlds.',
-        options: [{
-            text: 'Navigate both worlds',
-            outcomes: [
-                { weight: 40, effects: { education: +1 }, karma: 0, description: 'Two languages, two perspectives.' },
-                { weight: 35, effects: { health: -1 }, karma: 0, description: 'The tension of duality.' },
-                { weight: 25, effects: { connections: +1 }, karma: 0, description: 'You bridge communities others cannot.' }
-            ]
-        }]
+        prompt: 'At home, one language and culture. At school, another. You live between two worlds. Neither fully claims you.',
+        options: [
+            {
+                text: 'Learn to code-switch',
+                preview: { description: 'Become fluent in both worlds' },
+                outcomes: [
+                    { weight: 45, effects: { education: +1 }, karma: 0, description: 'Two languages, two perspectives. You contain multitudes.' },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The constant translation is exhausting.' },
+                    { weight: 20, effects: { connections: +1 }, karma: 0, description: 'You bridge communities others cannot.' }
+                ]
+            },
+            {
+                text: 'Lean into school culture',
+                preview: { description: 'Fit in outside, whatever the cost inside' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1, health: -1 }, karma: 0, description: 'You pass. Almost. The accent at home embarrasses you now.' },
+                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'Success at school, distance at home.' },
+                    { weight: 25, effects: { connections: +1 }, karma: -1, description: 'You reject your parents\' world. The loss comes later.' }
+                ]
+            },
+            {
+                text: 'Hold tight to home culture',
+                preview: { description: 'Stay rooted in your parents\' world' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1, education: -1 }, karma: 0, description: 'Family bonds strengthen. School feels foreign.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Identity feels solid. You know who you are.' },
+                    { weight: 25, effects: { connections: -1 }, karma: 0, description: 'Peers see you as different. Outsider.' }
+                ]
+            }
+        ]
     },
     {
         id: 'heritage_shame',
@@ -1416,17 +1563,38 @@ export const events = [
     {
         id: 'child_arrives',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         special: 'child_birth',  // Special flag for lineage system
-        prompt: 'A child comes into your life.',
-        options: [{
-            text: 'Welcome parenthood',
-            outcomes: [
-                { weight: 50, effects: { connections: +1, wealth: -1 }, karma: 2, description: 'Your world changes forever. A new generation begins.' },
-                { weight: 30, effects: { connections: +1, health: -1 }, karma: 1, description: 'Sleepless nights, but boundless joy.' },
-                { weight: 20, effects: { connections: +2 }, karma: 2, description: 'Parenthood suits you well.' }
-            ]
-        }]
+        prompt: 'A child comes into your life. Everything shifts.',
+        options: [
+            {
+                text: 'Embrace it fully',
+                preview: { description: 'Throw yourself into parenthood' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +2, wealth: -1 }, karma: 2, description: 'Your world contracts to a crib, a cry, a heartbeat. Nothing else matters.', tagAxis: { family_vs_career: 1 } },
+                    { weight: 35, effects: { connections: +1, health: -1 }, karma: 1, description: 'Sleepless devotion. You give everything.', tagAxis: { family_vs_career: 1 } },
+                    { weight: 20, effects: { connections: +1, wealth: -1 }, karma: 1, description: 'Total commitment has its costs, but no regrets.' }
+                ]
+            },
+            {
+                text: 'Try to balance everything',
+                preview: { description: 'Maintain your life while parenting' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1 }, karma: 1, description: 'You find a rhythm. Exhausting, but sustainable.' },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The juggling act takes its toll. Something always slips.' },
+                    { weight: 25, effects: { connections: +1, wealth: +1 }, karma: 1, description: 'Against the odds, you make it work.' }
+                ]
+            },
+            {
+                text: 'Feel overwhelmed',
+                preview: { description: 'Be honest about the struggle' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1, health: -1 }, karma: 0, description: 'Parenthood does not come easily. But you show up anyway.' },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The weight of responsibility nearly crushes you.' },
+                    { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Your honesty lets others help. You are not alone.' }
+                ]
+            }
+        ]
     },
     {
         id: 'family_planning',
@@ -1462,32 +1630,74 @@ export const events = [
     {
         id: 'childless_reflection',
         stage: 'late',
-        type: 'forced',
+        type: 'choice',
         special: 'childless_check',  // Only shows if no children
-        prompt: 'In quiet moments, you reflect on the life you built.',
-        options: [{
-            text: 'Make peace with it',
-            outcomes: [
-                { weight: 40, effects: { connections: +1 }, karma: 1, description: 'You find meaning in other relationships.' },
-                { weight: 35, effects: {}, karma: 0, description: 'Life took its own path.' },
-                { weight: 25, effects: { connections: -1 }, karma: -1, description: 'Regret lingers.' }
-            ]
-        }]
+        prompt: 'In quiet moments, you reflect on the life you built. No children carry your name forward.',
+        options: [
+            {
+                text: 'Find meaning elsewhere',
+                preview: { description: 'Legacy takes many forms' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Your impact lives in those you mentored, befriended, helped along the way.' },
+                    { weight: 35, effects: { education: +1 }, karma: 1, description: 'You created something lasting. Ideas. Work. Art.' },
+                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'Freedom has its own rewards. Peace settles in.' }
+                ]
+            },
+            {
+                text: 'Sit with the regret',
+                preview: { description: 'Be honest about the loss' },
+                outcomes: [
+                    { weight: 40, effects: { health: -1 }, karma: 0, description: 'The ache of the road not taken. It never fully fades.' },
+                    { weight: 35, effects: {}, karma: 0, description: 'You wonder. What if? Who would they have been?' },
+                    { weight: 25, effects: { connections: -1 }, karma: -1, description: 'Bitterness seeps into the quiet hours.' }
+                ]
+            },
+            {
+                text: 'Nurture the next generation anyway',
+                preview: { description: 'Invest in others\' children' },
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 2, description: 'Nieces, nephews, students, neighbors. You shape lives nonetheless.' },
+                    { weight: 30, effects: { wealth: -1, connections: +1 }, karma: 1, description: 'Your generosity creates bonds that matter.' },
+                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'Watching them grow fills something inside you.' }
+                ]
+            }
+        ]
     },
     {
         id: 'child_milestone',
         stage: 'late',
-        type: 'forced',
+        type: 'choice',
         special: 'has_children',  // Only shows if has children
-        prompt: 'Your child reaches a milestone in their own life.',
-        options: [{
-            text: 'Watch with pride',
-            outcomes: [
-                { weight: 50, effects: { connections: +1 }, karma: 2, description: 'They carry on what you began.' },
-                { weight: 30, effects: { health: +1 }, karma: 1, description: 'Joy keeps you young.' },
-                { weight: 20, effects: {}, karma: 1, description: 'The cycle continues.' }
-            ]
-        }]
+        prompt: 'Your child reaches a milestone in their own life. A graduation, a wedding, a child of their own.',
+        options: [
+            {
+                text: 'Celebrate openly',
+                preview: { description: 'Share in their triumph' },
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 2, description: 'Joy radiates between generations. They carry on what you began.' },
+                    { weight: 30, effects: { health: +1 }, karma: 1, description: 'Pride keeps the years at bay.' },
+                    { weight: 20, effects: { wealth: -1, connections: +1 }, karma: 1, description: 'You give generously to mark the occasion.' }
+                ]
+            },
+            {
+                text: 'Step back gracefully',
+                preview: { description: 'Let them have their moment' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Your quiet pride speaks volumes. They know what you feel.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'The cycle continues without you at the center. That is as it should be.' },
+                    { weight: 20, effects: {}, karma: 1, description: 'You watch from the edges. Content.' }
+                ]
+            },
+            {
+                text: 'Reflect on your own journey',
+                preview: { description: 'Their milestone mirrors your own past' },
+                outcomes: [
+                    { weight: 45, effects: { health: +1 }, karma: 1, description: 'Memory and present intertwine. Life makes sense, looking back.' },
+                    { weight: 35, effects: { connections: +1 }, karma: 1, description: 'You share stories of your own crossing. The bond deepens.' },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'Nostalgia cuts both ways. Some memories still sting.' }
+                ]
+            }
+        ]
     },
 
     // === LATE LIFE (55+) ===
@@ -2438,40 +2648,90 @@ export const events = [
     {
         id: 'plague_outbreak',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             pre_industrial: {
-                prompt: 'Plague sweeps through your village. The church bells toll constantly.',
-                options: [{
-                    text: 'Survive the outbreak',
-                    outcomes: [
-                        { weight: 35, effects: { health: -2, connections: -1 }, karma: 0, description: 'You survive, but many do not.' },
-                        { weight: 30, effects: { health: -1 }, karma: 1, description: 'Your family pulls through together.' },
-                        { weight: 20, effects: { health: +1 }, karma: 0, description: 'Strange fortune spares your household.' },
-                        { weight: 15, effects: { wealth: +1, connections: -2 }, karma: -1, description: 'Inheritance from the departed.' }
-                    ]
-                }]
+                prompt: 'Plague sweeps through your village. The church bells toll constantly. Your family must decide how to survive.',
+                options: [
+                    {
+                        text: 'Flee to the countryside',
+                        preview: { description: 'Escape before it spreads' },
+                        outcomes: [
+                            { weight: 40, effects: { wealth: -1 }, karma: 0, description: 'You escape, leaving everything behind.' },
+                            { weight: 35, effects: { health: +1 }, karma: 0, description: 'Distance saves you. Fresh air and isolation work.' },
+                            { weight: 25, effects: { connections: -2 }, karma: 0, description: 'You live. Your neighbors do not remember you fondly.' }
+                        ]
+                    },
+                    {
+                        text: 'Barricade and pray',
+                        preview: { description: 'Seal the house and trust in God' },
+                        outcomes: [
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'It enters anyway. One is taken. Others survive.' },
+                            { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Your household weathers it together.' },
+                            { weight: 30, effects: { health: -2 }, karma: 0, description: 'The walls could not keep it out.' }
+                        ]
+                    },
+                    {
+                        text: 'Help tend the sick',
+                        preview: { description: 'Risk yourself for others' },
+                        outcomes: [
+                            { weight: 30, effects: { health: -2, connections: +1 }, karma: 2, description: 'Exposure takes its toll. But you are remembered.', tagAxis: { self_vs_others: 1 } },
+                            { weight: 35, effects: { health: -1 }, karma: 1, description: 'You see death up close. It marks you.', tagAxis: { self_vs_others: 1 } },
+                            { weight: 35, effects: { connections: +1 }, karma: 2, description: 'Somehow, you are spared. Your service is not forgotten.', tagAxis: { self_vs_others: 1 } }
+                        ]
+                    }
+                ]
             },
             industrial_revolution: {
-                prompt: 'Cholera spreads through the crowded tenements.',
-                options: [{
-                    text: 'Weather the epidemic',
-                    outcomes: [
-                        { weight: 40, effects: { health: -1 }, karma: 0, description: 'The unsanitary conditions claim their toll.' },
-                        { weight: 35, effects: {}, karma: 0, description: 'Your family avoids the worst.' },
-                        { weight: 25, effects: { health: -2 }, karma: 0, description: 'The sickness hits hard.' }
-                    ]
-                }]
+                prompt: 'Cholera spreads through the crowded tenements. The water is bad. The air is worse.',
+                options: [
+                    {
+                        text: 'Boil everything',
+                        preview: { description: 'Your parents heard rumors about water' },
+                        outcomes: [
+                            { weight: 45, effects: { health: +1 }, karma: 0, description: 'Old wisdom saves you. The boiled water spares your household.' },
+                            { weight: 35, effects: {}, karma: 0, description: 'You avoid the worst. Many neighbors are not so fortunate.' },
+                            { weight: 20, effects: { health: -1 }, karma: 0, description: 'Precautions help, but not enough.' }
+                        ]
+                    },
+                    {
+                        text: 'Crowd into the workhouse',
+                        preview: { description: 'Seek shelter where there is food' },
+                        outcomes: [
+                            { weight: 40, effects: { health: -1 }, karma: 0, description: 'Crowded conditions spread sickness faster.' },
+                            { weight: 35, effects: { health: -2 }, karma: 0, description: 'The workhouse becomes a charnel house.' },
+                            { weight: 25, effects: { wealth: +1 }, karma: 0, description: 'You survive. The hardship teaches grim lessons.' }
+                        ]
+                    },
+                    {
+                        text: 'Stay put and hope',
+                        preview: { description: 'Wait for it to pass' },
+                        outcomes: [
+                            { weight: 40, effects: { health: -1 }, karma: 0, description: 'The unsanitary conditions claim their toll.' },
+                            { weight: 35, effects: {}, karma: 0, description: 'Luck favors your family this time.' },
+                            { weight: 25, effects: { health: -2, connections: -1 }, karma: 0, description: 'Loss visits your door.' }
+                        ]
+                    }
+                ]
             }
         },
-        prompt: 'Disease spreads through your community.',
-        options: [{
-            text: 'Endure',
-            outcomes: [
-                { weight: 50, effects: { health: -1 }, karma: 0, description: 'Illness touches your life.' },
-                { weight: 50, effects: {}, karma: 0, description: 'You escape the worst.' }
-            ]
-        }]
+        prompt: 'Disease spreads through your community. How does your family respond?',
+        options: [
+            {
+                text: 'Take precautions',
+                outcomes: [
+                    { weight: 50, effects: {}, karma: 0, description: 'You do what you can.' },
+                    { weight: 50, effects: { health: -1 }, karma: 0, description: 'Illness touches your life anyway.' }
+                ]
+            },
+            {
+                text: 'Help others',
+                outcomes: [
+                    { weight: 50, effects: { health: -1, connections: +1 }, karma: 1, description: 'Service in dark times.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Community strengthens.' }
+                ]
+            }
+        ]
     },
     {
         id: 'feudal_obligation',
@@ -2551,29 +2811,58 @@ export const events = [
     {
         id: 'famine_year',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             pre_industrial: {
-                prompt: 'The harvest fails. Hunger stalks the land.',
-                options: [{
-                    text: 'Struggle through',
-                    outcomes: [
-                        { weight: 30, effects: { health: -2, wealth: -1 }, karma: 0, description: 'Starvation nearly claims you.' },
-                        { weight: 35, effects: { health: -1 }, karma: 0, description: 'Hunger becomes a constant companion.' },
-                        { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Community shares what little remains.' },
-                        { weight: 10, effects: {}, karma: 0, description: 'Your family had stores enough.' }
-                    ]
-                }]
+                prompt: 'The harvest fails. Hunger stalks the land. There is not enough for everyone.',
+                options: [
+                    {
+                        text: 'Share what little you have',
+                        preview: { description: 'The community survives together or not at all' },
+                        outcomes: [
+                            { weight: 35, effects: { health: -2, connections: +1 }, karma: 2, description: 'Starvation nearly claims you. But neighbors remember.', tagAxis: { self_vs_others: 1 } },
+                            { weight: 40, effects: { health: -1, connections: +1 }, karma: 1, description: 'Everyone suffers equally. Bonds form in hunger.', tagAxis: { self_vs_others: 1 } },
+                            { weight: 25, effects: { health: -1 }, karma: 1, description: 'Shared hardship. Shared survival.' }
+                        ]
+                    },
+                    {
+                        text: 'Hoard your family\'s stores',
+                        preview: { description: 'Your own must come first' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: -1 }, karma: -1, description: 'Your family eats while others watch. Resentment grows.' },
+                            { weight: 35, effects: { health: +1, connections: -1 }, karma: -1, description: 'You survive stronger than most. The cost is not forgiven.' },
+                            { weight: 25, effects: {}, karma: 0, description: 'You scrape by. Others do not ask where your food came from.' }
+                        ]
+                    },
+                    {
+                        text: 'Forage and scavenge',
+                        preview: { description: 'Find what the land still offers' },
+                        outcomes: [
+                            { weight: 40, effects: { education: +1, health: -1 }, karma: 0, description: 'You learn which roots and bark sustain life. A bitter education.' },
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'The wild provides little. But something.' },
+                            { weight: 25, effects: { health: -2 }, karma: 0, description: 'You eat what you should not. The sickness follows.' }
+                        ]
+                    }
+                ]
             }
         },
-        prompt: 'Hard times test your family.',
-        options: [{
-            text: 'Endure',
-            outcomes: [
-                { weight: 60, effects: { health: -1 }, karma: 0, description: 'Scarcity marks you.' },
-                { weight: 40, effects: {}, karma: 0, description: 'You survive.' }
-            ]
-        }]
+        prompt: 'Hard times test your family. How do you face scarcity?',
+        options: [
+            {
+                text: 'Tighten your belt',
+                outcomes: [
+                    { weight: 50, effects: { health: -1 }, karma: 0, description: 'Scarcity marks you.' },
+                    { weight: 50, effects: {}, karma: 0, description: 'You survive.' }
+                ]
+            },
+            {
+                text: 'Help others in need',
+                outcomes: [
+                    { weight: 50, effects: { health: -1, connections: +1 }, karma: 1, description: 'Generosity in hardship.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Community pulls through together.' }
+                ]
+            }
+        ]
     },
 
     // === INDUSTRIAL REVOLUTION (1850-1920) ===
@@ -2654,29 +2943,58 @@ export const events = [
     {
         id: 'tenement_conditions',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             industrial_revolution: {
-                prompt: 'Your family lives in a cramped tenement. Disease spreads easily in the squalor.',
-                options: [{
-                    text: 'Grow up in these conditions',
-                    outcomes: [
-                        { weight: 35, effects: { health: -1 }, karma: 0, description: 'The city marks your lungs and bones.' },
-                        { weight: 30, effects: { connections: +1 }, karma: 0, description: 'Neighbors become family.' },
-                        { weight: 20, effects: { health: -2 }, karma: 0, description: 'Illness becomes your constant companion.' },
-                        { weight: 15, effects: { education: -1 }, karma: 0, description: 'Work, not school, defines your childhood.' }
-                    ]
-                }]
+                prompt: 'Your family lives in a cramped tenement. Disease spreads easily in the squalor. Childhood here demands choices.',
+                options: [
+                    {
+                        text: 'Work to help the family',
+                        preview: { description: 'Earn while others play' },
+                        outcomes: [
+                            { weight: 40, effects: { wealth: +1, education: -1 }, karma: 0, description: 'Work, not school, defines your childhood. You learn other lessons.' },
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'The factory takes from your small body.' },
+                            { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Fellow workers become companions. Solidarity born young.' }
+                        ]
+                    },
+                    {
+                        text: 'Sneak off to school when possible',
+                        preview: { description: 'Steal hours for learning' },
+                        outcomes: [
+                            { weight: 40, effects: { education: +1 }, karma: 0, description: 'Letters and numbers light a path out.' },
+                            { weight: 35, effects: { health: -1, education: +1 }, karma: 0, description: 'Running between work and school exhausts you.' },
+                            { weight: 25, effects: { education: +1, connections: +1 }, karma: 0, description: 'A teacher sees your hunger for knowledge.' }
+                        ]
+                    },
+                    {
+                        text: 'Run with the street children',
+                        preview: { description: 'Find family among the lost' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: +1, health: -1 }, karma: 0, description: 'The streets teach survival. Neighbors become family.' },
+                            { weight: 35, effects: { connections: +1 }, karma: 0, description: 'A gang of urchins. You belong somewhere.' },
+                            { weight: 25, effects: { health: -2 }, karma: -1, description: 'Illness and trouble find you in the alleys.' }
+                        ]
+                    }
+                ]
             }
         },
-        prompt: 'Urban life shapes your youth.',
-        options: [{
-            text: 'Grow up',
-            outcomes: [
-                { weight: 50, effects: { health: -1 }, karma: 0, description: 'Hardship marks you.' },
-                { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Community forms.' }
-            ]
-        }]
+        prompt: 'Urban life shapes your youth. How do you survive?',
+        options: [
+            {
+                text: 'Work hard',
+                outcomes: [
+                    { weight: 50, effects: { wealth: +1, health: -1 }, karma: 0, description: 'Hardship marks you.' },
+                    { weight: 50, effects: {}, karma: 0, description: 'You manage.' }
+                ]
+            },
+            {
+                text: 'Find community',
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Neighbors become family.' },
+                    { weight: 50, effects: { health: -1, connections: +1 }, karma: 0, description: 'Shared struggle.' }
+                ]
+            }
+        ]
     },
     {
         id: 'suffrage_movement',
@@ -2813,29 +3131,58 @@ export const events = [
     {
         id: 'dust_bowl_flight',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             early_modern: {
-                prompt: 'The land dies. Black blizzards bury farms. Your family must flee west.',
-                options: [{
-                    text: 'Join the migration',
-                    outcomes: [
-                        { weight: 30, effects: { wealth: -1, health: -1 }, karma: 0, description: 'The road is hard, the welcome cold.' },
-                        { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Everything you knew left behind.' },
-                        { weight: 20, effects: { health: -1 }, karma: 1, description: 'Hardship builds character.' },
-                        { weight: 15, effects: { wealth: +1 }, karma: 0, description: 'Eventually, you find your footing.' }
-                    ]
-                }]
+                prompt: 'The land dies. Black blizzards bury farms. There is nothing left to grow. You must decide how to face the exodus.',
+                options: [
+                    {
+                        text: 'Leave early while you still can',
+                        preview: { description: 'Go before everyone else' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: -1 }, karma: 0, description: 'You arrive before the flood of Okies. But you abandoned neighbors.', tagAxis: { roots_vs_wings: 1 } },
+                            { weight: 35, effects: { wealth: +1, connections: -1 }, karma: 0, description: 'Early arrival means picking the better camps. It costs you trust.' },
+                            { weight: 25, effects: {}, karma: 0, description: 'You get ahead of the worst. Others call it desertion.' }
+                        ]
+                    },
+                    {
+                        text: 'Stay until the bitter end',
+                        preview: { description: 'This is home until it kills you' },
+                        outcomes: [
+                            { weight: 35, effects: { health: -2, connections: +1 }, karma: 1, description: 'The dust takes your lungs. Your neighbors remember your stubbornness.', tagAxis: { roots_vs_wings: -1 } },
+                            { weight: 35, effects: { wealth: -1, health: -1 }, karma: 0, description: 'Nothing left when you finally go. Too late.' },
+                            { weight: 30, effects: { connections: +1 }, karma: 1, description: 'You help bury the dead land. Someone had to witness.' }
+                        ]
+                    },
+                    {
+                        text: 'Organize the caravan together',
+                        preview: { description: 'We go as a community' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: +1, wealth: -1 }, karma: 2, description: 'Slower. Poorer. But you arrive together.', tagAxis: { self_vs_others: 1 } },
+                            { weight: 35, effects: { health: -1, connections: +1 }, karma: 1, description: 'The road is hard, but you share it. That counts.', tagAxis: { self_vs_others: 1 } },
+                            { weight: 25, effects: { connections: +1 }, karma: 1, description: 'A new community takes root in California. Born of shared hardship.' }
+                        ]
+                    }
+                ]
             }
         },
-        prompt: 'Environmental disaster forces change.',
-        options: [{
-            text: 'Adapt',
-            outcomes: [
-                { weight: 50, effects: { connections: -1 }, karma: 0, description: 'You start over.' },
-                { weight: 50, effects: {}, karma: 0, description: 'You weather the storm.' }
-            ]
-        }]
+        prompt: 'Environmental disaster forces change. How do you face it?',
+        options: [
+            {
+                text: 'Go now',
+                outcomes: [
+                    { weight: 50, effects: { connections: -1 }, karma: 0, description: 'You start over somewhere new.', tagAxis: { roots_vs_wings: 1 } },
+                    { weight: 50, effects: {}, karma: 0, description: 'Adaptation is survival.' }
+                ]
+            },
+            {
+                text: 'Stay and fight',
+                outcomes: [
+                    { weight: 50, effects: { health: -1 }, karma: 1, description: 'The land wins in the end.', tagAxis: { roots_vs_wings: -1 } },
+                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Community holds together.' }
+                ]
+            }
+        ]
     },
     {
         id: 'wartime_rationing',
@@ -2895,40 +3242,90 @@ export const events = [
     {
         id: 'returning_veteran',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             early_modern: {
-                prompt: 'You return from war, changed forever. Home feels foreign now.',
-                options: [{
-                    text: 'Reintegrate into civilian life',
-                    outcomes: [
-                        { weight: 30, effects: { health: -1, education: +1 }, karma: 0, description: 'GI Bill opens new doors, but nightmares linger.' },
-                        { weight: 35, effects: { connections: -1 }, karma: 0, description: 'No one understands what you saw.' },
-                        { weight: 20, effects: { wealth: +1 }, karma: 0, description: 'Skills learned in service pay off.' },
-                        { weight: 15, effects: { health: -2 }, karma: 0, description: 'The war never leaves you.' }
-                    ]
-                }]
+                prompt: 'You return from war, changed forever. Home feels foreign. The person who left is not the one who came back.',
+                options: [
+                    {
+                        text: 'Use the GI Bill, build a new future',
+                        preview: { description: 'Education as a way forward' },
+                        outcomes: [
+                            { weight: 40, effects: { education: +2, health: -1 }, karma: 0, description: 'New doors open. Nightmares remain. But you build something.' },
+                            { weight: 35, effects: { education: +1, wealth: +1 }, karma: 0, description: 'The military taught discipline. School teaches opportunity.' },
+                            { weight: 25, effects: { education: +1, connections: +1 }, karma: 0, description: 'Fellow veterans understand. Campus life finds its rhythm.' }
+                        ]
+                    },
+                    {
+                        text: 'Try to forget and resume normal life',
+                        preview: { description: 'Push it down and carry on' },
+                        outcomes: [
+                            { weight: 35, effects: { connections: -1 }, karma: 0, description: 'No one understands what you saw. You stop trying to explain.' },
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'The past leaks through. Sleep is fitful.' },
+                            { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'You throw yourself into work. It almost works.' }
+                        ]
+                    },
+                    {
+                        text: 'Seek out fellow veterans',
+                        preview: { description: 'Only they understand' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: +1, health: -1 }, karma: 0, description: 'Brotherhood of the scarred. You drink to remember. To forget.' },
+                            { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Talking helps. Shared burden, shared healing.' },
+                            { weight: 25, effects: { health: -2 }, karma: 0, description: 'Surrounded by those who share the darkness, you sink deeper.' }
+                        ]
+                    }
+                ]
             },
             cold_war: {
-                prompt: 'Military service ends. Adjustment awaits.',
-                options: [{
-                    text: 'Return to civilian life',
-                    outcomes: [
-                        { weight: 40, effects: { education: +1 }, karma: 0, description: 'Benefits help you advance.' },
-                        { weight: 40, effects: { connections: -1 }, karma: 0, description: 'The transition is difficult.' },
-                        { weight: 20, effects: { wealth: +1 }, karma: 0, description: 'Discipline serves you well.' }
-                    ]
-                }]
+                prompt: 'Military service ends. The adjustment to civilian life awaits. You must find your place in a world that moved on without you.',
+                options: [
+                    {
+                        text: 'Use your benefits wisely',
+                        preview: { description: 'Build on what you learned' },
+                        outcomes: [
+                            { weight: 45, effects: { education: +1, wealth: +1 }, karma: 0, description: 'Benefits help you advance. Discipline serves you well.' },
+                            { weight: 35, effects: { education: +1 }, karma: 0, description: 'A smooth transition. The system worked for you.' },
+                            { weight: 20, effects: { wealth: +1 }, karma: 0, description: 'Skills transfer. You land on your feet.' }
+                        ]
+                    },
+                    {
+                        text: 'Struggle with the transition',
+                        preview: { description: 'Civilian life is harder than expected' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: -1 }, karma: 0, description: 'The civilian world makes no sense. You feel lost.' },
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'Structure disappears. You flounder.' },
+                            { weight: 25, effects: { connections: +1 }, karma: 0, description: 'Others help you find your footing. Eventually.' }
+                        ]
+                    },
+                    {
+                        text: 'Stay connected to military community',
+                        preview: { description: 'Never really leave' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: +1 }, karma: 0, description: 'Veterans organizations give you purpose.' },
+                            { weight: 35, effects: { wealth: +1, connections: +1 }, karma: 0, description: 'Defense sector jobs keep you in the fold.' },
+                            { weight: 25, effects: { health: -1 }, karma: 0, description: 'You never quite become a civilian again.' }
+                        ]
+                    }
+                ]
             }
         },
-        prompt: 'Service shapes you.',
-        options: [{
-            text: 'Move forward',
-            outcomes: [
-                { weight: 50, effects: { education: +1 }, karma: 0, description: 'Experience becomes education.' },
-                { weight: 50, effects: { health: -1 }, karma: 0, description: 'Scars remain.' }
-            ]
-        }]
+        prompt: 'Service shapes you. How do you carry it forward?',
+        options: [
+            {
+                text: 'Build on the experience',
+                outcomes: [
+                    { weight: 50, effects: { education: +1 }, karma: 0, description: 'Experience becomes education.' },
+                    { weight: 50, effects: { wealth: +1 }, karma: 0, description: 'Skills transfer to civilian life.' }
+                ]
+            },
+            {
+                text: 'Struggle with the past',
+                outcomes: [
+                    { weight: 50, effects: { health: -1 }, karma: 0, description: 'Scars remain.' },
+                    { weight: 50, effects: { connections: -1 }, karma: 0, description: 'Distance grows from those who do not understand.' }
+                ]
+            }
+        ]
     },
 
     // === COLD WAR (1950-1990) ===
@@ -3007,28 +3404,58 @@ export const events = [
     {
         id: 'space_race_inspiration',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             cold_war: {
-                prompt: 'Humanity reaches for the stars. You watch rockets launch on television.',
-                options: [{
-                    text: 'Dream of the future',
-                    outcomes: [
-                        { weight: 40, effects: { education: +1 }, karma: 1, description: 'Science captures your imagination.' },
-                        { weight: 35, effects: {}, karma: 0, description: 'Exciting times to be young.' },
-                        { weight: 25, effects: { education: +1, health: +1 }, karma: 1, description: 'Hope and wonder fill your youth.' }
-                    ]
-                }]
+                prompt: 'Humanity reaches for the stars. You watch rockets launch on television. A man walks on the moon. What does it stir in you?',
+                options: [
+                    {
+                        text: 'Devour everything about space',
+                        preview: { description: 'Let wonder become obsession' },
+                        outcomes: [
+                            { weight: 45, effects: { education: +1 }, karma: 1, description: 'Science captures your imagination. You build rockets from bottles, map the constellations.' },
+                            { weight: 35, effects: { education: +1, connections: -1 }, karma: 0, description: 'Books about space replace friends. You dream of places no one around you understands.' },
+                            { weight: 20, effects: { education: +2 }, karma: 1, description: 'A calling crystallizes. The future belongs to the stars.' }
+                        ]
+                    },
+                    {
+                        text: 'Share the wonder with others',
+                        preview: { description: 'Bring friends and family into the dream' },
+                        outcomes: [
+                            { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Watching launches becomes a family ritual. Shared wonder.' },
+                            { weight: 35, effects: { education: +1, connections: +1 }, karma: 1, description: 'You explain the science to younger siblings. Teaching begins early.' },
+                            { weight: 20, effects: { health: +1 }, karma: 0, description: 'Hope and wonder fill your youth. The future feels bright.' }
+                        ]
+                    },
+                    {
+                        text: 'Question what it all means',
+                        preview: { description: 'Wonder or weapons? Progress or pride?' },
+                        outcomes: [
+                            { weight: 40, effects: { education: +1 }, karma: 0, description: 'The rockets that reach the moon could destroy cities. You learn to hold two truths.' },
+                            { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Your doubts make others uncomfortable. Not everyone wants to question progress.' },
+                            { weight: 25, effects: { education: +1 }, karma: 0, description: 'Critical thinking develops young. You see more than most.' }
+                        ]
+                    }
+                ]
             }
         },
-        prompt: 'The world changes around you.',
-        options: [{
-            text: 'Watch and wonder',
-            outcomes: [
-                { weight: 60, effects: { education: +1 }, karma: 0, description: 'Inspiration strikes.' },
-                { weight: 40, effects: {}, karma: 0, description: 'Life continues.' }
-            ]
-        }]
+        prompt: 'The world changes around you. Humanity reaches for something new.',
+        options: [
+            {
+                text: 'Let it inspire you',
+                outcomes: [
+                    { weight: 50, effects: { education: +1 }, karma: 0, description: 'Inspiration strikes.' },
+                    { weight: 50, effects: { health: +1 }, karma: 0, description: 'Hope fills you.' }
+                ]
+            },
+            {
+                text: 'Stay grounded',
+                outcomes: [
+                    { weight: 50, effects: {}, karma: 0, description: 'Life continues.' },
+                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Your attention stays on those around you.' }
+                ]
+            }
+        ]
     },
     {
         id: 'counterculture_choice',
@@ -3352,29 +3779,58 @@ export const events = [
     {
         id: 'algorithmic_fate',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         eraVariants: {
             contemporary: {
-                prompt: 'Algorithms shape what you see, who you meet, what opportunities find you.',
-                options: [{
-                    text: 'Navigate the digital world',
-                    outcomes: [
-                        { weight: 30, effects: { connections: +1 }, karma: 0, description: 'The feed connects you to like minds.' },
-                        { weight: 30, effects: { health: -1 }, karma: 0, description: 'Comparison and doom-scrolling take their toll.' },
-                        { weight: 25, effects: { wealth: +1 }, karma: 0, description: 'Online opportunity materializes.' },
-                        { weight: 15, effects: { connections: -1 }, karma: 0, description: 'Echo chambers isolate you.' }
-                    ]
-                }]
+                prompt: 'Algorithms shape what you see, who you meet, what opportunities find you. The feed knows you better than you know yourself.',
+                options: [
+                    {
+                        text: 'Embrace the feed',
+                        preview: { description: 'Let the algorithm guide you' },
+                        outcomes: [
+                            { weight: 35, effects: { connections: +1, wealth: +1 }, karma: 0, description: 'The algorithm serves you well. Opportunity flows.' },
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'Endless scroll. Comparison traps. Hours vanish.' },
+                            { weight: 30, effects: { connections: -1 }, karma: 0, description: 'Echo chambers shape your reality. You lose perspective.' }
+                        ]
+                    },
+                    {
+                        text: 'Curate carefully',
+                        preview: { description: 'Try to control your exposure' },
+                        outcomes: [
+                            { weight: 40, effects: { education: +1 }, karma: 0, description: 'Intentional use yields learning without the toxicity.' },
+                            { weight: 35, effects: {}, karma: 0, description: 'The effort to resist is constant. A draw.' },
+                            { weight: 25, effects: { health: +1 }, karma: 1, description: 'Boundaries protect your peace.' }
+                        ]
+                    },
+                    {
+                        text: 'Disconnect deliberately',
+                        preview: { description: 'Resist the algorithmic pull' },
+                        outcomes: [
+                            { weight: 35, effects: { health: +1, connections: -1 }, karma: 0, description: 'Peace, but you miss things. Social circles wonder where you went.' },
+                            { weight: 35, effects: { wealth: -1 }, karma: 0, description: 'Opportunities pass you by. The network moves without you.' },
+                            { weight: 30, effects: { health: +1, education: +1 }, karma: 1, description: 'Books, conversations, presence. The old ways still work.' }
+                        ]
+                    }
+                ]
             }
         },
         prompt: 'Technology shapes your world.',
-        options: [{
-            text: 'Participate',
-            outcomes: [
-                { weight: 50, effects: {}, karma: 0, description: 'The digital life.' },
-                { weight: 50, effects: { connections: +1 }, karma: 0, description: 'New connections form.' }
-            ]
-        }]
+        options: [
+            {
+                text: 'Engage with it',
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'New tools, new connections.' },
+                    { weight: 50, effects: {}, karma: 0, description: 'You adapt to the times.' }
+                ]
+            },
+            {
+                text: 'Keep your distance',
+                outcomes: [
+                    { weight: 50, effects: { health: +1 }, karma: 0, description: 'Some prefer the old ways.' },
+                    { weight: 50, effects: { connections: -1 }, karma: 0, description: 'The world moves on without you.' }
+                ]
+            }
+        ]
     },
 
     // ============================================
@@ -3385,19 +3841,39 @@ export const events = [
     {
         id: 'examination_pressure',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         region: 'east_asia',
         themes: ['education_pressure', 'filial_piety'],
-        prompt: 'The examination system determines your future. Intense study consumes your youth.',
-        options: [{
-            text: 'Endure the pressure',
-            outcomes: [
-                { weight: 35, effects: { education: +2, health: -1 }, karma: 0, description: 'Success through sacrifice.' },
-                { weight: 30, effects: { education: +1 }, karma: 0, description: 'Adequate results, exhaustion.' },
-                { weight: 20, effects: { health: -2 }, karma: 0, description: 'The pressure breaks something in you.' },
-                { weight: 15, effects: { education: +2, connections: -1 }, karma: 0, description: 'Academic success, social isolation.' }
-            ]
-        }]
+        prompt: 'The examination system determines your future. Intense study consumes your youth. How do you face this pressure?',
+        options: [
+            {
+                text: 'Dedicate yourself completely',
+                preview: { description: 'Sacrifice everything for the exam' },
+                outcomes: [
+                    { weight: 40, effects: { education: +2, health: -1 }, karma: 0, description: 'Success through sacrifice. Your rank opens doors.' },
+                    { weight: 35, effects: { education: +2, connections: -1 }, karma: 0, description: 'Academic success, social isolation. Friends become memories.' },
+                    { weight: 25, effects: { education: +1, health: -2 }, karma: 0, description: 'You break yourself trying. It was never going to be enough.' }
+                ]
+            },
+            {
+                text: 'Find balance where you can',
+                preview: { description: 'Study hard but protect something of yourself' },
+                outcomes: [
+                    { weight: 40, effects: { education: +1 }, karma: 0, description: 'Adequate results. Exhaustion. But you survived intact.' },
+                    { weight: 35, effects: { education: +1, health: +1 }, karma: 0, description: 'Not the top, but healthy. Some things matter more.' },
+                    { weight: 25, effects: { education: +1, connections: +1 }, karma: 0, description: 'Friends who understand. You kept both.' }
+                ]
+            },
+            {
+                text: 'Resist the system',
+                preview: { description: 'Refuse to let the exam define you' },
+                outcomes: [
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Disappointment from family. You are the one who did not try hard enough.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Your mental health survives. Other paths will have to open.' },
+                    { weight: 30, effects: { education: +1, connections: -1 }, karma: 1, description: 'You find your own way to learn. Not the expected path.', tagAxis: { tradition_vs_change: 1 } }
+                ]
+            }
+        ]
     },
     {
         id: 'family_honor_choice',
@@ -3536,35 +4012,76 @@ export const events = [
     {
         id: 'extended_family_network',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         region: 'latin_america',
         themes: ['family_centrality'],
-        prompt: 'Extended family surrounds you. Aunts, uncles, cousins - all play a role.',
-        options: [{
-            text: 'Grow within the network',
-            outcomes: [
-                { weight: 45, effects: { connections: +1 }, karma: 0, description: 'Never alone, always watched.' },
-                { weight: 35, effects: { connections: +1, wealth: +1 }, karma: 0, description: 'Family provides.' },
-                { weight: 20, effects: { connections: +1, health: -1 }, karma: 0, description: 'Drama and support in equal measure.' }
-            ]
-        }]
+        prompt: 'Extended family surrounds you. Aunts, uncles, cousins, compadres - all play a role. How do you grow within this web?',
+        options: [
+            {
+                text: 'Embrace the network fully',
+                preview: { description: 'Family is everything' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +2 }, karma: 0, description: 'Never alone. Always supported. Always watched.' },
+                    { weight: 35, effects: { connections: +1, wealth: +1 }, karma: 0, description: 'Family provides. Birthdays, quinceañeras, Sunday dinners. You belong.' },
+                    { weight: 20, effects: { connections: +1, health: -1 }, karma: 0, description: 'Drama and support in equal measure. Family is complicated.' }
+                ]
+            },
+            {
+                text: 'Carve out private space',
+                preview: { description: 'Need some room to breathe' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1, health: +1 }, karma: 0, description: 'You find balance. Loved but not smothered.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Independence develops. Some elders disapprove.' },
+                    { weight: 25, effects: { connections: -1 }, karma: 0, description: 'Whispers about you being "different". The network notices.' }
+                ]
+            },
+            {
+                text: 'Become the helper',
+                preview: { description: 'Take care of younger cousins, run errands' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1 }, karma: 1, description: 'You earn your place through service. Everyone relies on you.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 35, effects: { connections: +1, education: -1 }, karma: 0, description: 'Family duties leave little time for studies.' },
+                    { weight: 20, effects: { health: -1, connections: +1 }, karma: 0, description: 'The weight of expectations settles young on your shoulders.' }
+                ]
+            }
+        ]
     },
     {
         id: 'currency_crisis',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         region: 'latin_america',
         themes: ['economic_instability'],
-        prompt: 'The currency crashes. Life savings evaporate overnight.',
-        options: [{
-            text: 'Survive the crisis',
-            outcomes: [
-                { weight: 35, effects: { wealth: -2 }, karma: 0, description: 'Everything lost.' },
-                { weight: 35, effects: { wealth: -1, connections: +1 }, karma: 0, description: 'Community pulls together.' },
-                { weight: 20, effects: { wealth: -1 }, karma: 1, description: 'Resilience defines you.' },
-                { weight: 10, effects: {}, karma: 0, description: 'Somehow, you escape the worst.' }
-            ]
-        }]
+        prompt: 'The currency crashes. Life savings evaporate overnight. This is not the first time. How do you survive this one?',
+        options: [
+            {
+                text: 'Convert to dollars immediately',
+                preview: { description: 'Move fast while you can' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: -1 }, karma: 0, description: 'You save something. Less than you had, but more than nothing.' },
+                    { weight: 35, effects: {}, karma: 0, description: 'Quick thinking preserves what you have. For now.' },
+                    { weight: 25, effects: { wealth: +1 }, karma: 0, description: 'You knew this was coming. Preparation pays off.' }
+                ]
+            },
+            {
+                text: 'Pool resources with family',
+                preview: { description: 'Together we survive' },
+                outcomes: [
+                    { weight: 45, effects: { wealth: -1, connections: +1 }, karma: 1, description: 'Everyone suffers less when the burden is shared.' },
+                    { weight: 35, effects: { connections: +1 }, karma: 0, description: 'The network sustains you. This is what family is for.' },
+                    { weight: 20, effects: { wealth: -2, connections: +1 }, karma: 0, description: 'You give more than you receive. But that is how it works.' }
+                ]
+            },
+            {
+                text: 'Hustle in the informal economy',
+                preview: { description: 'Do what you must to survive' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: +1, health: -1 }, karma: 0, description: 'Street smarts pay when systems fail.' },
+                    { weight: 35, effects: {}, karma: 0, description: 'You adapt. Rebusque becomes a way of life.' },
+                    { weight: 25, effects: { wealth: -1 }, karma: -1, description: 'The informal economy is unforgiving too.' }
+                ]
+            }
+        ]
     },
     {
         id: 'informal_economy',
@@ -3677,19 +4194,39 @@ export const events = [
     {
         id: 'regime_change',
         stage: 'young_adult',
-        type: 'forced',
+        type: 'choice',
         region: 'eastern_europe',
         themes: ['political_change', 'transition'],
-        prompt: 'The old system collapses. Everything you knew changes overnight.',
-        options: [{
-            text: 'Navigate the transition',
-            outcomes: [
-                { weight: 30, effects: { wealth: -1 }, karma: 0, description: 'Chaos brings loss.' },
-                { weight: 30, effects: { wealth: +2 }, karma: 0, description: 'Opportunity in upheaval.' },
-                { weight: 25, effects: { connections: -1 }, karma: 0, description: 'Old networks dissolve.' },
-                { weight: 15, effects: { education: +1 }, karma: 0, description: 'New freedoms open new learning.' }
-            ]
-        }]
+        prompt: 'The old system collapses. Everything you knew changes overnight. The rules are rewritten. How do you position yourself?',
+        options: [
+            {
+                text: 'Seize the new opportunities',
+                preview: { description: 'Chaos is a ladder' },
+                outcomes: [
+                    { weight: 35, effects: { wealth: +2, connections: -1 }, karma: 0, description: 'Opportunity in upheaval. You are not sentimental about the old ways.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { wealth: +1 }, karma: 0, description: 'Quick adaptation pays. The new economy rewards the nimble.' },
+                    { weight: 30, effects: { wealth: -1 }, karma: -1, description: 'You try to play the game. Others play it better.' }
+                ]
+            },
+            {
+                text: 'Protect what you have',
+                preview: { description: 'Survive the transition intact' },
+                outcomes: [
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'Old networks dissolve. The Party membership means nothing now.' },
+                    { weight: 35, effects: { wealth: -1 }, karma: 0, description: 'Chaos brings loss. But you weather it.' },
+                    { weight: 25, effects: { health: +1 }, karma: 0, description: 'You keep your head down. Stability in instability.' }
+                ]
+            },
+            {
+                text: 'Embrace the new freedoms',
+                preview: { description: 'Finally, you can speak. Travel. Dream.' },
+                outcomes: [
+                    { weight: 40, effects: { education: +1, health: +1 }, karma: 1, description: 'New freedoms open new learning. Books once banned, ideas once forbidden.' },
+                    { weight: 35, effects: { connections: +1 }, karma: 0, description: 'Civil society awakens. You find your people.' },
+                    { weight: 25, effects: { wealth: -1, education: +1 }, karma: 0, description: 'Freedom does not pay the bills. But it feeds the soul.' }
+                ]
+            }
+        ]
     },
     {
         id: 'privatization',
@@ -3828,18 +4365,39 @@ export const events = [
     {
         id: 'village_elder_wisdom',
         stage: 'childhood',
-        type: 'forced',
+        type: 'choice',
         region: 'sub_saharan_africa',
         themes: ['community', 'ubuntu'],
-        prompt: 'The village elders share wisdom. Stories carry lessons across generations.',
-        options: [{
-            text: 'Learn from tradition',
-            outcomes: [
-                { weight: 45, effects: { education: +1 }, karma: 1, description: 'Ancestral knowledge passes to you.' },
-                { weight: 35, effects: { connections: +1 }, karma: 0, description: 'Community embraces you.' },
-                { weight: 20, effects: {}, karma: 0, description: 'Lessons stored for later.' }
-            ]
-        }]
+        prompt: 'The village elders share wisdom. Stories carry lessons across generations. The firelight flickers. How do you receive what they offer?',
+        options: [
+            {
+                text: 'Listen with full attention',
+                preview: { description: 'Absorb the old ways completely' },
+                outcomes: [
+                    { weight: 45, effects: { education: +1 }, karma: 1, description: 'Ancestral knowledge passes to you. You carry what they know.' },
+                    { weight: 35, effects: { connections: +1, education: +1 }, karma: 1, description: 'The elders notice. You are being prepared for something.' },
+                    { weight: 20, effects: { connections: +1 }, karma: 0, description: 'Community embraces you as one who remembers.' }
+                ]
+            },
+            {
+                text: 'Ask questions, even uncomfortable ones',
+                preview: { description: 'Challenge as a form of respect' },
+                outcomes: [
+                    { weight: 40, effects: { education: +1 }, karma: 0, description: 'Questions sharpen understanding. Some elders appreciate this.' },
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Your questioning is seen as disrespect. Not everyone understands.' },
+                    { weight: 25, effects: { education: +1, connections: +1 }, karma: 1, description: 'An elder recognizes a future leader in your curiosity.' }
+                ]
+            },
+            {
+                text: 'Drift away in your own thoughts',
+                preview: { description: 'The modern world calls louder' },
+                outcomes: [
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'The elders notice your absence even when present.' },
+                    { weight: 35, effects: {}, karma: 0, description: 'Lessons stored for later, perhaps. Unrealized wisdom.' },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'You feel caught between worlds. Neither fully claims you.' }
+                ]
+            }
+        ]
     },
     {
         id: 'urban_migration_africa',
@@ -3951,19 +4509,39 @@ export const events = [
     {
         id: 'healthcare_crisis',
         stage: 'middle',
-        type: 'forced',
+        type: 'choice',
         region: 'north_america',
         themes: ['self_reliance'],
-        prompt: 'Medical bills threaten to overwhelm you.',
-        options: [{
-            text: 'Navigate the system',
-            outcomes: [
-                { weight: 35, effects: { wealth: -2 }, karma: 0, description: 'Savings wiped out.' },
-                { weight: 30, effects: { wealth: -1 }, karma: 0, description: 'Insurance helps somewhat.' },
-                { weight: 20, effects: { wealth: -1, health: +1 }, karma: 0, description: 'Worth the cost.' },
-                { weight: 15, effects: { connections: +1 }, karma: 0, description: 'Crowdfunding saves you.' }
-            ]
-        }]
+        prompt: 'Medical bills threaten to overwhelm you. The system is complex, the costs staggering. How do you navigate this?',
+        options: [
+            {
+                text: 'Fight through the insurance maze',
+                preview: { description: 'Paperwork, appeals, phone calls' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: -1, health: -1 }, karma: 0, description: 'Hours on hold. Denied. Appeal. Approved. Exhausting.' },
+                    { weight: 35, effects: { wealth: -1 }, karma: 0, description: 'Insurance covers most. Most.' },
+                    { weight: 25, effects: { education: +1 }, karma: 0, description: 'You learn to work the system. A grim expertise.' }
+                ]
+            },
+            {
+                text: 'Go public with your struggle',
+                preview: { description: 'Crowdfunding, social media, asking for help' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1 }, karma: 0, description: 'Community rallies. Strangers donate. The shame fades in gratitude.' },
+                    { weight: 35, effects: { wealth: +1, health: -1 }, karma: 0, description: 'Crowdfunding covers the bills. The stress of publicity does not help healing.' },
+                    { weight: 25, effects: { connections: -1 }, karma: 0, description: 'The campaign falls flat. You are not sympathetic enough, not viral enough.' }
+                ]
+            },
+            {
+                text: 'Delay treatment, cut costs',
+                preview: { description: 'Skip tests, split pills, wait it out' },
+                outcomes: [
+                    { weight: 35, effects: { health: -2 }, karma: 0, description: 'What was treatable becomes something worse.' },
+                    { weight: 35, effects: { wealth: +1, health: -1 }, karma: 0, description: 'You save money. The condition lingers. A dark trade.' },
+                    { weight: 30, effects: { health: -1 }, karma: 0, description: 'It was not that serious after all. This time.' }
+                ]
+            }
+        ]
     }
 ];
 
