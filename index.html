@@ -130,6 +130,14 @@
         .choice {
             position: relative;
             overflow: hidden;
+            transform: scale(1);
+            transition: border-color 0.2s, background 0.2s, transform 0.1s ease-out;
+        }
+
+        /* Active state - immediate feedback on click (before committing) */
+        .choice:active:not(.committing) {
+            transform: scale(0.98);
+            background: #161616;
         }
 
         /* Hover state - hint at what's at stake */
@@ -154,6 +162,8 @@
             pointer-events: none;
             border-color: #888;
             background: #1a1a1a;
+            transform: scale(1);
+            animation: commitPulse 0.3s ease-out;
         }
 
         .choice.committing::before {
@@ -170,6 +180,12 @@
             color: #aaa;
         }
 
+        @keyframes commitPulse {
+            0% { transform: scale(0.98); }
+            40% { transform: scale(1.01); }
+            100% { transform: scale(1); }
+        }
+
         @keyframes commitSweep {
             0% { width: 3px; opacity: 1; }
             100% { width: 100%; opacity: 0.5; }
@@ -179,11 +195,12 @@
         .choices.has-committed .choice:not(.committing) {
             opacity: 0.3;
             pointer-events: none;
+            transition: opacity 0.25s ease-out;
         }
 
         /* Outcome display that references the choice */
         .outcome-container {
-            animation: fadeInUp 0.4s ease-out;
+            animation: fadeInUp 0.5s ease-out;
         }
 
         .outcome-choice-echo {
@@ -191,16 +208,27 @@
             font-size: 14px;
             margin-bottom: 12px;
             font-style: italic;
+            opacity: 0;
+            animation: fadeInSoft 0.4s ease-out forwards;
+            animation-delay: 0.1s;
         }
 
         .outcome-description {
             color: #e0e0e0;
             line-height: 1.6;
+            opacity: 0;
+            animation: fadeInSoft 0.5s ease-out forwards;
+            animation-delay: 0.25s;
         }
 
         @keyframes fadeInUp {
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInSoft {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
         }
 
         /* Hidden cost revelation overlay */

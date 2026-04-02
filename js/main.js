@@ -564,8 +564,10 @@ function resolveEvent(optionIndex) {
     state.life = applyOutcome(state.life, outcome);
     
     // Record significant choices for later callbacks
-    // Only record choice events (not forced events)
-    if (event.type === 'choice' && event.options.length > 1) {
+    // Record multi-option events (real choices) - check options.length > 1 as the primary condition
+    // Events without explicit type are treated as choices if they have multiple options
+    const isChoiceEvent = event.options.length > 1 && event.type !== 'forced';
+    if (isChoiceEvent) {
         const tags = outcome.tagAxis ? Object.keys(outcome.tagAxis) : [];
         rememberChoice(event.id, option.text, state.currentStage, tags);
     }
