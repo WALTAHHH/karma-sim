@@ -48,13 +48,14 @@ export function registerDebugCallback(name, callback) {
 }
 
 export function updateDebugPanel(state = null) {
-    const panel = document.getElementById('debug-panel');
-    if (!panel || !debugPanelVisible) return;
-    
-    // Store current state reference
+    // Store current state reference BEFORE early return
+    // This ensures state is available when panel is first opened mid-game
     if (state !== null) {
         currentState = state;
     }
+    
+    const panel = document.getElementById('debug-panel');
+    if (!panel || !debugPanelVisible) return;
     
     // Use stored state if no state provided
     const displayState = state || currentState;

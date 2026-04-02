@@ -475,8 +475,8 @@ function showEvent(event) {
     const tradeoffInfo = getEventTradeoffInfo(event);
 
     if (event.options.length === 1) {
-        // Forced event - single option
-        ui.showButton(event.options[0].text, () => resolveEvent(0));
+        // Forced event - single option, styled differently to show this isn't a choice
+        ui.showForcedEvent(event.options[0].text, () => resolveEvent(0));
     } else {
         // Choice event - pass trade-off info for preview display
         ui.showChoices(event.options, resolveEvent, tradeoffInfo);
@@ -578,16 +578,19 @@ function resolveEvent(optionIndex) {
         }
     }
 
-    // Track significant moments
-    if (outcome.karma >= 2 || outcome.karma <= -2 ||
-        Math.abs(outcome.effects?.wealth || 0) >= 2 ||
-        Math.abs(outcome.effects?.health || 0) >= 2) {
+    // Track significant moments - capture any outcome with karma or stat changes
+    // Also capture choice events (type: 'choice') as they represent player agency
+    const hasKarmaImpact = outcome.karma !== 0 && outcome.karma !== undefined;
+    const hasStatImpact = outcome.effects && Object.values(outcome.effects).some(v => v !== 0);
+    const isChoiceEvent = state.currentEvent && state.currentEvent.type === 'choice';
+    
+    if (hasKarmaImpact || hasStatImpact || isChoiceEvent) {
         state.moments.push(outcome.description);
     }
 
-    // Limit moments to 4
-    if (state.moments.length > 4) {
-        state.moments = state.moments.slice(-4);
+    // Limit moments to 6 for richer summaries (was 4)
+    if (state.moments.length > 6) {
+        state.moments = state.moments.slice(-6);
     }
 
     // Handle migration outcomes
@@ -756,6 +759,9 @@ function triggerDeath(reason) {
     } else {
         ui.showText(deathEvent.prompt);
     }
+
+    // Update life arc to show completed journey
+    ui.showLifeArc(state.maxEvents, state.maxEvents);
 
     ui.showButton('Continue', showSummary);
     updateDebugPanel(state);

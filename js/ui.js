@@ -364,6 +364,19 @@ export function showButton(text, onClick, secondary = false) {
     choicesEl.appendChild(btn);
 }
 
+// Show a forced event (single option) with appropriate styling
+// These are moments where life happens TO you, not choices you make
+export function showForcedEvent(optionText, onClick) {
+    const choicesEl = getChoicesEl();
+    choicesEl.innerHTML = '';
+    
+    const btn = document.createElement('button');
+    btn.className = 'begin-button forced-event';
+    btn.textContent = optionText;
+    btn.addEventListener('click', onClick);
+    choicesEl.appendChild(btn);
+}
+
 // Render the life arc progress indicator
 export function renderLifeArc(eventCount, maxEvents) {
     // Remove existing arc if present
