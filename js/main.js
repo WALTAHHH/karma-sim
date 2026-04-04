@@ -12,7 +12,7 @@ import {
     processPendingHiddenCosts,
     applyHiddenCost,
     getEventTradeoffInfo
-} from './events.js';
+} from './events/index.js';
 import * as ui from './ui.js';
 import { checkAchievements } from './achievements.js';
 import { initDebug, updateDebugPanel, registerDebugCallback } from './debug.js';
