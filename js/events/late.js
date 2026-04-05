@@ -409,5 +409,371 @@ export const lateEvents = [
     // ERA-SPECIFIC EVENTS
     // ============================================
 
-    // === PRE-INDUSTRIAL (1700-1850) ===
+    // === NEW LATE-STAGE EVENTS ===
+
+    // Generational values - tradition_vs_change axis
+    {
+        id: 'generational_values',
+        stage: 'late',
+        type: 'choice',
+        prompt: 'The younger generation does things very differently. You struggle to understand—or accept.',
+        options: [
+            {
+                text: 'Hold firm to what you know',
+                preview: { description: 'Tradition has value they cannot see' },
+                outcomes: [
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'They call you stubborn. Perhaps you are.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Certainty is its own comfort.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 25, effects: { connections: +1 }, karma: 1, description: 'Some seek you out for precisely this wisdom.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' }
+                ]
+            },
+            {
+                text: 'Try to learn their ways',
+                preview: { description: 'Perhaps they know something you do not' },
+                outcomes: [
+                    { weight: 40, effects: { education: +1 }, karma: 1, description: 'Old dogs can learn. It just takes longer.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Your openness surprises them. Bridges form.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'The pace of change exhausts you.', tagAxis: { tradition_vs_change: -1 } }
+                ]
+            }
+        ]
+    },
+
+    // Late wanderlust - roots_vs_wings axis, wanderer/rooted grants
+    {
+        id: 'late_wanderlust',
+        stage: 'late',
+        type: 'choice',
+        prompt: 'Your grandchildren have scattered. Friends pass on. You realize nothing ties you here anymore.',
+        options: [
+            {
+                text: 'Travel while you still can',
+                preview: { description: 'See what remains unseen' },
+                outcomes: [
+                    { weight: 35, effects: { health: -1, education: +1 }, karma: 1, description: 'Every place teaches something. Even now.', tagAxis: { roots_vs_wings: 1 }, grantsTag: 'wanderer' },
+                    { weight: 35, effects: { connections: +1 }, karma: 0, description: 'You meet others on the road. Fellow seekers.' },
+                    { weight: 30, effects: { wealth: -1 }, karma: 0, description: 'Money spent on memories. Worth it.', tagAxis: { roots_vs_wings: 1 } }
+                ]
+            },
+            {
+                text: 'Deepen where you are planted',
+                preview: { description: 'Home is home for a reason' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1 }, karma: 1, description: 'Community knows your name. That matters.', tagAxis: { roots_vs_wings: -1 }, grantsTag: 'rooted' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Familiar ground eases the burden of age.', tagAxis: { roots_vs_wings: -1 } },
+                    { weight: 25, effects: {}, karma: 0, description: 'You watch the seasons turn. One more time.', tagAxis: { roots_vs_wings: -1 } }
+                ]
+            }
+        ]
+    },
+
+    // Tradition keeper (middle-stage event moved to late with late variant)
+    {
+        id: 'tradition_keeper_late',
+        stage: 'late',
+        type: 'choice',
+        prompt: 'An old tradition is dying. You may be the last who remembers it properly.',
+        options: [
+            {
+                text: 'Preserve it faithfully',
+                preview: { description: 'Some things must not be lost' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1, wealth: -1 }, karma: 1, description: 'Time and money spent on memory. The tradition lives.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { education: +1 }, karma: 1, description: 'Teaching others, you understand it more deeply yourself.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' },
+                    { weight: 25, effects: {}, karma: 0, description: 'You try. Whether it takes root remains to be seen.' }
+                ]
+            },
+            {
+                text: 'Let it evolve',
+                preview: { description: 'Adaptation is how traditions survive' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1 }, karma: 0, description: 'The young make it their own. Different, but alive.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'Watching it change hurts. But change is life.' },
+                    { weight: 25, effects: { education: +1, connections: +1 }, karma: 1, description: 'New and old merge. Something better emerges.', tagAxis: { tradition_vs_change: -1 }, grantsTag: 'progressive' }
+                ]
+            },
+            {
+                text: 'Let it go',
+                preview: { description: 'Not everything deserves to survive' },
+                outcomes: [
+                    { weight: 40, effects: {}, karma: 0, description: 'It fades. Perhaps that is natural.' },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'One less burden to carry.' },
+                    { weight: 25, effects: { connections: -1 }, karma: -1, description: 'Others hoped you would care more.' }
+                ]
+            }
+        ]
+    },
+
+    // Passing the torch
+    {
+        id: 'passing_torch',
+        stage: 'late',
+        type: 'choice',
+        requirements: { education: '>2' },
+        prompt: 'Someone young shows promise in your field. They could carry your work forward.',
+        options: [
+            {
+                text: 'Mentor them intensively',
+                preview: { description: 'Pass on everything you know' },
+                outcomes: [
+                    { weight: 45, effects: { connections: +1, health: -1 }, karma: 2, description: 'Your knowledge lives on in them.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 35, effects: { education: +1 }, karma: 1, description: 'Teaching deepens your own understanding.', tagAxis: { self_vs_others: 1 } },
+                    { weight: 20, effects: { connections: +1 }, karma: 2, description: 'They surpass you. That is the point.', tagAxis: { self_vs_others: 1 }, grantsTag: 'generous' }
+                ]
+            },
+            {
+                text: 'Let them find their own way',
+                preview: { description: 'Independence is the best teacher' },
+                outcomes: [
+                    { weight: 45, effects: {}, karma: 0, description: 'They struggle, but grow.', tagAxis: { self_vs_others: -1 } },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'You conserve your remaining energy.' },
+                    { weight: 20, effects: { connections: -1 }, karma: -1, description: 'They wonder why you did not help more.', tagAxis: { self_vs_others: -1 } }
+                ]
+            }
+        ]
+    },
+
+    // Old debts
+    {
+        id: 'old_debts',
+        stage: 'late',
+        type: 'choice',
+        prompt: 'Someone from your past seeks you out. They remember a kindness—or a wrong.',
+        options: [
+            {
+                text: 'Face them openly',
+                preview: { description: 'Whatever comes, meet it head on' },
+                outcomes: [
+                    { weight: 40, effects: { connections: +1 }, karma: 1, description: 'Old accounts settle. Peace follows.' },
+                    { weight: 35, effects: { health: -1 }, karma: 0, description: 'The past carries weight you had forgotten.' },
+                    { weight: 25, effects: { wealth: +1 }, karma: 1, description: 'A debt repaid, unexpectedly.' }
+                ]
+            },
+            {
+                text: 'Avoid the encounter',
+                preview: { description: 'Some chapters are best left closed' },
+                outcomes: [
+                    { weight: 40, effects: {}, karma: 0, description: 'They move on. So do you.' },
+                    { weight: 35, effects: { health: -1 }, karma: -1, description: 'Avoidance has its own weight.' },
+                    { weight: 25, effects: { connections: -1 }, karma: 0, description: 'They take your silence as an answer.' }
+                ]
+            }
+        ]
+    },
+
+    // Downsizing life
+    {
+        id: 'downsizing_life',
+        stage: 'late',
+        type: 'choice',
+        prompt: 'Your home has grown too large. Too many rooms, too many memories, too many stairs.',
+        options: [
+            {
+                text: 'Move somewhere smaller',
+                preview: { description: 'Simplify while you can choose' },
+                outcomes: [
+                    { weight: 40, effects: { wealth: +1, health: +1 }, karma: 0, description: 'Less to maintain. More to live.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'The new place suits your needs.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 25, effects: { connections: -1 }, karma: 0, description: 'You leave behind more than a house.', tagAxis: { tradition_vs_change: -1 } }
+                ]
+            },
+            {
+                text: 'Stay in the family home',
+                preview: { description: 'This is where life happened' },
+                outcomes: [
+                    { weight: 35, effects: { connections: +1 }, karma: 0, description: 'Grandchildren visit where their parents grew up.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { wealth: -1, health: -1 }, karma: 0, description: 'Maintenance becomes a burden.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 30, effects: { health: +1 }, karma: 1, description: 'Every room holds a story. You are not ready to close the book.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'rooted' }
+                ]
+            }
+        ]
+    },
+
+    // === ERA VARIANTS FOR LATE STAGE ===
+
+    // Plague survival - late stage era variant
+    {
+        id: 'plague_survival_late',
+        stage: 'late',
+        type: 'choice',
+        eraVariants: {
+            pre_industrial: {
+                prompt: 'The plague returns to your village. At your age, survival is unlikely. But perhaps that changes what you do.',
+                options: [
+                    {
+                        text: 'Tend to the dying',
+                        preview: { description: 'If death comes anyway, let it come doing good' },
+                        outcomes: [
+                            { weight: 40, effects: { health: -2, connections: +1 }, karma: 3, description: 'Your final days bring comfort to others.', tagAxis: { self_vs_others: 2 } },
+                            { weight: 35, effects: { connections: +1 }, karma: 2, description: 'Somehow you survive. The village remembers.' },
+                            { weight: 25, effects: { health: -1 }, karma: 2, description: 'Service unto the end. A life well-closed.' }
+                        ]
+                    },
+                    {
+                        text: 'Retreat to safety',
+                        preview: { description: 'Preserve what days remain' },
+                        outcomes: [
+                            { weight: 40, effects: { health: +1 }, karma: 0, description: 'You outlive the outbreak. Alone.', tagAxis: { self_vs_others: -1 } },
+                            { weight: 35, effects: { connections: -1 }, karma: -1, description: 'Those who stayed remember your absence.' },
+                            { weight: 25, effects: {}, karma: 0, description: 'Neither hero nor coward. Just alive.' }
+                        ]
+                    }
+                ]
+            }
+        },
+        prompt: 'Disease threatens your community. What role do you play?',
+        options: [
+            {
+                text: 'Help where you can',
+                outcomes: [
+                    { weight: 50, effects: { health: -1, connections: +1 }, karma: 2, description: 'Service in the twilight.' },
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Your experience guides others.' }
+                ]
+            }
+        ]
+    },
+
+    // Digital divide - contemporary/digital era variant
+    {
+        id: 'digital_divide',
+        stage: 'late',
+        type: 'choice',
+        eraVariants: {
+            contemporary: {
+                prompt: 'The world has moved online. Banking, communication, even medical appointments. You feel left behind.',
+                options: [
+                    {
+                        text: 'Learn the new ways',
+                        preview: { description: 'Adapt or be forgotten' },
+                        outcomes: [
+                            { weight: 35, effects: { education: +1, health: -1 }, karma: 1, description: 'Frustrating hours at the screen. But you learn.', tagAxis: { tradition_vs_change: -1 }, grantsTag: 'progressive' },
+                            { weight: 35, effects: { connections: +1 }, karma: 1, description: 'Video calls bring distant faces close. Worth it.' },
+                            { weight: 30, effects: { education: +1 }, karma: 0, description: 'Never fluent, but functional. That is enough.' }
+                        ]
+                    },
+                    {
+                        text: 'Rely on others to help',
+                        preview: { description: 'Let family handle it' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: +1 }, karma: 0, description: 'Grandchildren explain patiently. A new kind of bond.', tagAxis: { social_vs_solitary: 1 } },
+                            { weight: 35, effects: { connections: -1 }, karma: 0, description: 'You become a burden. They have their own lives.' },
+                            { weight: 25, effects: { wealth: -1 }, karma: 0, description: 'You pay someone to manage what you cannot.' }
+                        ]
+                    },
+                    {
+                        text: 'Refuse to participate',
+                        preview: { description: 'The old ways worked fine' },
+                        outcomes: [
+                            { weight: 35, effects: { health: +1 }, karma: 0, description: 'Peace in simplicity. Some doors close.', tagAxis: { tradition_vs_change: 1 } },
+                            { weight: 35, effects: { connections: -1, wealth: -1 }, karma: 0, description: 'The world moves on without you. Literally.' },
+                            { weight: 30, effects: {}, karma: 0, description: 'You manage. Barely. On the margins.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' }
+                        ]
+                    }
+                ]
+            }
+        },
+        prompt: 'Technology reshapes daily life. How do you respond?',
+        options: [
+            {
+                text: 'Adapt',
+                outcomes: [
+                    { weight: 50, effects: { education: +1 }, karma: 0, description: 'You learn what you must.' },
+                    { weight: 50, effects: {}, karma: 0, description: 'Changes come whether you want them or not.' }
+                ]
+            }
+        ]
+    },
+
+    // Industrial revolution late variant - factory closure
+    {
+        id: 'factory_closure_late',
+        stage: 'late',
+        type: 'choice',
+        eraVariants: {
+            industrial_revolution: {
+                prompt: 'The factory that employed you for decades is closing. Your skills are obsolete. Your body is worn.',
+                options: [
+                    {
+                        text: 'Seek the workhouse',
+                        preview: { description: 'At least there is food and shelter' },
+                        outcomes: [
+                            { weight: 40, effects: { health: -1, wealth: -1 }, karma: 0, description: 'The workhouse takes what pride remains.' },
+                            { weight: 35, effects: { health: -1 }, karma: 0, description: 'Survival, barely.' },
+                            { weight: 25, effects: { connections: +1 }, karma: 0, description: 'Fellow workers share the burden.' }
+                        ]
+                    },
+                    {
+                        text: 'Rely on family',
+                        preview: { description: 'They owe you for years of sacrifice' },
+                        outcomes: [
+                            { weight: 40, effects: { connections: +1 }, karma: 0, description: 'Family takes you in. Dignity preserved.' },
+                            { weight: 35, effects: { health: +1 }, karma: 1, description: 'Rest at last, surrounded by those you raised.' },
+                            { weight: 25, effects: { connections: -1 }, karma: -1, description: 'They have their own struggles. You are a burden.' }
+                        ]
+                    },
+                    {
+                        text: 'Share what wisdom you have',
+                        preview: { description: 'The young need guidance for the new machines' },
+                        outcomes: [
+                            { weight: 35, effects: { education: +1, connections: +1 }, karma: 1, description: 'Your experience still has value.', tagAxis: { tradition_vs_change: 1 } },
+                            { weight: 35, effects: { wealth: +1 }, karma: 0, description: 'A small wage for your knowledge.' },
+                            { weight: 30, effects: { connections: -1 }, karma: 0, description: 'They have no patience for old methods.', tagAxis: { tradition_vs_change: -1 } }
+                        ]
+                    }
+                ]
+            }
+        },
+        prompt: 'Economic change leaves you behind. How do you survive?',
+        options: [
+            {
+                text: 'Adapt as best you can',
+                outcomes: [
+                    { weight: 50, effects: { health: -1 }, karma: 0, description: 'Age makes adaptation harder.' },
+                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Others help you through.' }
+                ]
+            }
+        ]
+    },
+
+    // Cold War late variant - witness to history
+    {
+        id: 'cold_war_twilight',
+        stage: 'late',
+        type: 'choice',
+        eraVariants: {
+            cold_war: {
+                prompt: 'You have lived through world wars, nuclear fears, and the space race. The young ask: what was it like?',
+                options: [
+                    {
+                        text: 'Share the stories',
+                        preview: { description: 'History lives in those who witnessed it' },
+                        outcomes: [
+                            { weight: 45, effects: { connections: +1 }, karma: 1, description: 'Your memories become their lessons.', tagAxis: { social_vs_solitary: 1 } },
+                            { weight: 35, effects: { education: +1 }, karma: 1, description: 'Telling helps you understand what you lived through.', tagAxis: { tradition_vs_change: 1 } },
+                            { weight: 20, effects: { health: -1 }, karma: 0, description: 'Some memories are heavy to carry again.' }
+                        ]
+                    },
+                    {
+                        text: 'Let the past rest',
+                        preview: { description: 'Some things are better forgotten' },
+                        outcomes: [
+                            { weight: 45, effects: { health: +1 }, karma: 0, description: 'Peace in moving forward.', tagAxis: { social_vs_solitary: -1 } },
+                            { weight: 35, effects: {}, karma: 0, description: 'The young have their own futures to make.' },
+                            { weight: 20, effects: { connections: -1 }, karma: -1, description: 'They wanted to know you. You closed the door.' }
+                        ]
+                    }
+                ]
+            }
+        },
+        prompt: 'The younger generation wants to understand what you lived through.',
+        options: [
+            {
+                text: 'Share your perspective',
+                outcomes: [
+                    { weight: 50, effects: { connections: +1 }, karma: 1, description: 'Experience shared.' },
+                    { weight: 50, effects: {}, karma: 0, description: 'Some things are hard to explain.' }
+                ]
+            }
+        ]
+    }
 ];
