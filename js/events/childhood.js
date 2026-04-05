@@ -343,18 +343,18 @@ export const childhoodEvents = [
                 text: 'Embrace the fresh start',
                 preview: { description: 'See it as an adventure' },
                 outcomes: [
-                    { weight: 45, effects: { connections: +1 }, karma: 0, description: 'New place, new friends.', tagAxis: { roots_vs_wings: 1, tradition_vs_change: 1 } },
-                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'The new school proves better.' },
-                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'The change energizes you.' }
+                    { weight: 45, effects: { connections: +1 }, karma: 0, description: 'New place, new friends.', tagAxis: { roots_vs_wings: 1, tradition_vs_change: -1 } },
+                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'The new school proves better.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 20, effects: { health: +1 }, karma: 1, description: 'The change energizes you. You were made to move.', tagAxis: { roots_vs_wings: 1 }, grantsTag: 'wanderer' }
                 ]
             },
             {
                 text: 'Hold onto what was',
                 preview: { description: 'Keep your old connections alive' },
                 outcomes: [
-                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'Old friends become memories.', tagAxis: { roots_vs_wings: -1 } },
-                    { weight: 35, effects: {}, karma: 0, description: 'You write letters. Some reply.' },
-                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'The longing for home weighs on you.' }
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'Old friends become memories.', tagAxis: { roots_vs_wings: -1, tradition_vs_change: 1 } },
+                    { weight: 35, effects: {}, karma: 0, description: 'You write letters. Some reply.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'The longing for home weighs on you.', tagAxis: { roots_vs_wings: -1, tradition_vs_change: 1 } }
                 ]
             }
         ]
@@ -368,8 +368,8 @@ export const childhoodEvents = [
             {
                 text: 'Accept their guidance',
                 outcomes: [
-                    { weight: 50, effects: { education: +1 }, karma: 1, description: 'Their wisdom shapes you.', tagAxis: { social_vs_solitary: 1 } },
-                    { weight: 30, effects: { connections: +1 }, karma: 1, description: 'A bond forms across generations.', tagAxis: { social_vs_solitary: 1 } },
+                    { weight: 50, effects: { education: +1 }, karma: 1, description: 'Their wisdom shapes you.', tagAxis: { social_vs_solitary: 1, tradition_vs_change: 1 } },
+                    { weight: 30, effects: { connections: +1 }, karma: 1, description: 'A bond forms across generations.', tagAxis: { social_vs_solitary: 1, tradition_vs_change: 1 } },
                     { weight: 20, effects: {}, karma: 0, description: 'You learn, but grow apart.' }
                 ],
                 preview: { description: 'Learn from their experience' }
@@ -377,8 +377,8 @@ export const childhoodEvents = [
             {
                 text: 'Keep your independence',
                 outcomes: [
-                    { weight: 60, effects: {}, karma: 0, description: 'You forge your own path.', tagAxis: { social_vs_solitary: -1 } },
-                    { weight: 40, effects: { health: +1 }, karma: 0, description: 'Self-reliance becomes your strength.', tagAxis: { social_vs_solitary: -1 } }
+                    { weight: 60, effects: {}, karma: 0, description: 'You forge your own path.', tagAxis: { social_vs_solitary: -1, tradition_vs_change: -1 } },
+                    { weight: 40, effects: { health: +1 }, karma: 0, description: 'Self-reliance becomes your strength.', tagAxis: { social_vs_solitary: -1, tradition_vs_change: -1 } }
                 ],
                 preview: { description: 'Figure things out yourself' }
             }
@@ -719,8 +719,8 @@ export const childhoodEvents = [
                 text: 'Dedicate yourself completely',
                 preview: { description: 'Sacrifice everything for the exam' },
                 outcomes: [
-                    { weight: 40, effects: { education: +2, health: -1 }, karma: 0, description: 'Success through sacrifice. Your rank opens doors.' },
-                    { weight: 35, effects: { education: +2, connections: -1 }, karma: 0, description: 'Academic success, social isolation. Friends become memories.' },
+                    { weight: 40, effects: { education: +2, health: -1 }, karma: 0, description: 'Success through sacrifice. Your rank opens doors.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { education: +2, connections: -1 }, karma: 0, description: 'Academic success, social isolation. Friends become memories.', tagAxis: { tradition_vs_change: 1 } },
                     { weight: 25, effects: { education: +1, health: -2 }, karma: 0, description: 'You break yourself trying. It was never going to be enough.' }
                 ]
             },
@@ -737,9 +737,9 @@ export const childhoodEvents = [
                 text: 'Resist the system',
                 preview: { description: 'Refuse to let the exam define you' },
                 outcomes: [
-                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Disappointment from family. You are the one who did not try hard enough.' },
-                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Your mental health survives. Other paths will have to open.' },
-                    { weight: 30, effects: { education: +1, connections: -1 }, karma: 1, description: 'You find your own way to learn. Not the expected path.', tagAxis: { tradition_vs_change: 1 } }
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Disappointment from family. You are the one who did not try hard enough.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { health: +1 }, karma: 0, description: 'Your mental health survives. Other paths will have to open.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 30, effects: { education: +1, connections: -1 }, karma: 1, description: 'You find your own way to learn. Not the expected path.', tagAxis: { tradition_vs_change: -1 }, grantsTag: 'progressive' }
                 ]
             }
         ]
@@ -793,9 +793,9 @@ export const childhoodEvents = [
                 text: 'Listen with full attention',
                 preview: { description: 'Absorb the old ways completely' },
                 outcomes: [
-                    { weight: 45, effects: { education: +1 }, karma: 1, description: 'Ancestral knowledge passes to you. You carry what they know.' },
-                    { weight: 35, effects: { connections: +1, education: +1 }, karma: 1, description: 'The elders notice. You are being prepared for something.' },
-                    { weight: 20, effects: { connections: +1 }, karma: 0, description: 'Community embraces you as one who remembers.' }
+                    { weight: 45, effects: { education: +1 }, karma: 1, description: 'Ancestral knowledge passes to you. You carry what they know.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { connections: +1, education: +1 }, karma: 1, description: 'The elders notice. You are being prepared for something.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 20, effects: { connections: +1 }, karma: 0, description: 'Community embraces you as one who remembers.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' }
                 ]
             },
             {
@@ -803,7 +803,7 @@ export const childhoodEvents = [
                 preview: { description: 'Challenge as a form of respect' },
                 outcomes: [
                     { weight: 40, effects: { education: +1 }, karma: 0, description: 'Questions sharpen understanding. Some elders appreciate this.' },
-                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Your questioning is seen as disrespect. Not everyone understands.' },
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Your questioning is seen as disrespect. Not everyone understands.', tagAxis: { tradition_vs_change: -1 } },
                     { weight: 25, effects: { education: +1, connections: +1 }, karma: 1, description: 'An elder recognizes a future leader in your curiosity.' }
                 ]
             },
@@ -811,9 +811,9 @@ export const childhoodEvents = [
                 text: 'Drift away in your own thoughts',
                 preview: { description: 'The modern world calls louder' },
                 outcomes: [
-                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'The elders notice your absence even when present.' },
+                    { weight: 40, effects: { connections: -1 }, karma: 0, description: 'The elders notice your absence even when present.', tagAxis: { tradition_vs_change: -1 } },
                     { weight: 35, effects: {}, karma: 0, description: 'Lessons stored for later, perhaps. Unrealized wisdom.' },
-                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'You feel caught between worlds. Neither fully claims you.' }
+                    { weight: 25, effects: { health: -1 }, karma: 0, description: 'You feel caught between worlds. Neither fully claims you.', tagAxis: { tradition_vs_change: -1 } }
                 ]
             }
         ]
