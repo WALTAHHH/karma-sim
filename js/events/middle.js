@@ -1271,18 +1271,18 @@ export const middleEvents = [
                     {
                         text: 'Move somewhere new',
                         outcomes: [
-                            { weight: 40, effects: { wealth: +1, connections: -1 }, karma: 0, description: 'Cost savings, social distance.' },
-                            { weight: 30, effects: { health: +1 }, karma: 0, description: 'Better quality of life.' },
-                            { weight: 20, effects: { connections: +1 }, karma: 0, description: 'New community welcomes you.' },
-                            { weight: 10, effects: { health: -1 }, karma: 0, description: 'Isolation takes hold.' }
+                            { weight: 40, effects: { wealth: +1, connections: -1 }, karma: 0, description: 'Cost savings, social distance.', tagAxis: { roots_vs_wings: 1, tradition_vs_change: -1 } },
+                            { weight: 30, effects: { health: +1 }, karma: 0, description: 'Better quality of life.', tagAxis: { roots_vs_wings: 1 } },
+                            { weight: 20, effects: { connections: +1 }, karma: 0, description: 'New community welcomes you. The wanderer spirit awakens.', tagAxis: { roots_vs_wings: 1 }, grantsTag: 'wanderer' },
+                            { weight: 10, effects: { health: -1 }, karma: 0, description: 'Isolation takes hold.', tagAxis: { roots_vs_wings: 1 } }
                         ]
                     },
                     {
                         text: 'Stay where you are',
                         outcomes: [
-                            { weight: 45, effects: { connections: +1 }, karma: 0, description: 'Roots run deep.' },
-                            { weight: 35, effects: {}, karma: 0, description: 'Familiarity comforts.' },
-                            { weight: 20, effects: { wealth: -1 }, karma: 0, description: 'Costs continue to rise.' }
+                            { weight: 45, effects: { connections: +1 }, karma: 0, description: 'Roots run deep. This is home.', tagAxis: { roots_vs_wings: -1, tradition_vs_change: 1 }, grantsTag: 'rooted' },
+                            { weight: 35, effects: {}, karma: 0, description: 'Familiarity comforts.', tagAxis: { roots_vs_wings: -1 } },
+                            { weight: 20, effects: { wealth: -1 }, karma: 0, description: 'Costs continue to rise.', tagAxis: { roots_vs_wings: -1 } }
                         ]
                     }
                 ]
@@ -1308,17 +1308,17 @@ export const middleEvents = [
             {
                 text: 'Fulfill your duty',
                 outcomes: [
-                    { weight: 45, effects: { connections: +1, wealth: -1 }, karma: 2, description: 'Devotion honored.' },
-                    { weight: 35, effects: { health: -1 }, karma: 1, description: 'Caretaking exhausts you.' },
-                    { weight: 20, effects: {}, karma: 1, description: 'Balance found.' }
+                    { weight: 45, effects: { connections: +1, wealth: -1 }, karma: 2, description: 'Devotion honored. The old ways matter.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { health: -1 }, karma: 1, description: 'Caretaking exhausts you. But tradition demands.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 20, effects: {}, karma: 1, description: 'Balance found.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' }
                 ]
             },
             {
                 text: 'Seek outside help',
                 outcomes: [
-                    { weight: 40, effects: { wealth: -1 }, karma: 0, description: 'Professional care costs.' },
-                    { weight: 35, effects: { connections: -1 }, karma: -1, description: 'Family disapproves.' },
-                    { weight: 25, effects: { health: +1 }, karma: 0, description: 'Sanity preserved.' }
+                    { weight: 40, effects: { wealth: -1 }, karma: 0, description: 'Professional care costs.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { connections: -1 }, karma: -1, description: 'Family disapproves. Times have changed.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 25, effects: { health: +1 }, karma: 0, description: 'Sanity preserved.', tagAxis: { tradition_vs_change: -1 } }
                 ]
             }
         ]
@@ -1451,16 +1451,16 @@ export const middleEvents = [
             {
                 text: 'Make the pilgrimage',
                 outcomes: [
-                    { weight: 45, effects: { health: +1 }, karma: 2, description: 'Spiritual renewal.' },
-                    { weight: 35, effects: { wealth: -1, connections: +1 }, karma: 1, description: 'Costly but meaningful.' },
-                    { weight: 20, effects: { connections: +1 }, karma: 1, description: 'Fellowship with believers.' }
+                    { weight: 45, effects: { health: +1 }, karma: 2, description: 'Spiritual renewal. Ancient traditions renew the soul.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: { wealth: -1, connections: +1 }, karma: 1, description: 'Costly but meaningful.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 20, effects: { connections: +1 }, karma: 1, description: 'Fellowship with believers.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' }
                 ]
             },
             {
                 text: 'Postpone the journey',
                 outcomes: [
                     { weight: 50, effects: {}, karma: 0, description: 'Another year, perhaps.' },
-                    { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'Resources conserved.' },
+                    { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'Resources conserved. Modern needs come first.', tagAxis: { tradition_vs_change: -1 } },
                     { weight: 20, effects: { health: -1 }, karma: -1, description: 'Spiritual yearning unfulfilled.' }
                 ]
             }
