@@ -1825,6 +1825,99 @@
             border-color: #aaa;
         }
 
+        /* Tutorial Tooltips */
+        .tutorial-tooltip {
+            position: fixed;
+            background: #1a1a2e;
+            border: 1px solid #4a9eff;
+            padding: 15px 20px;
+            max-width: 320px;
+            z-index: 2500;
+            animation: tooltipFadeIn 0.3s ease;
+            box-shadow: 0 4px 20px rgba(74, 158, 255, 0.2);
+        }
+
+        .tutorial-tooltip::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+        }
+
+        .tutorial-tooltip.arrow-top::before {
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-bottom-color: #4a9eff;
+        }
+
+        .tutorial-tooltip.arrow-bottom::before {
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-top-color: #4a9eff;
+        }
+
+        .tutorial-tooltip.arrow-left::before {
+            left: -16px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-right-color: #4a9eff;
+        }
+
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tutorial-tooltip.fade-out {
+            animation: tooltipFadeOut 0.2s ease forwards;
+        }
+
+        @keyframes tooltipFadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .tutorial-tooltip-icon {
+            color: #4a9eff;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .tutorial-tooltip-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .tutorial-tooltip-dismiss {
+            background: transparent;
+            border: 1px solid #4a9eff;
+            color: #4a9eff;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 6px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .tutorial-tooltip-dismiss:hover {
+            background: rgba(74, 158, 255, 0.1);
+        }
+
+        .tutorial-highlight {
+            animation: tutorialPulse 1s ease-in-out 3;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.5);
+        }
+
+        @keyframes tutorialPulse {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.3); }
+            50% { box-shadow: 0 0 0 6px rgba(74, 158, 255, 0.5); }
+        }
+
         /* Responsive */
         @media (max-width: 1100px) {
             #left-panel, #right-panel {

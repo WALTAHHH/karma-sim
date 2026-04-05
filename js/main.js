@@ -55,6 +55,14 @@ import {
     getTagKarmaModifier
 } from './tags.js';
 import { showGameHub, hideGameHub, setDebugMode as setGachaDebugMode } from './games/gameHub.js';
+import {
+    shouldShowTutorial,
+    shouldShowHint,
+    showTutorialTooltip,
+    completeTutorial,
+    removeAllTooltips,
+    TUTORIAL_HINTS
+} from './tutorial.js';
 
 // Game state
 const state = {
@@ -194,6 +202,9 @@ function showTitle() {
     
     // Hide inline stats when on title screen
     hideInlineStats();
+    
+    // Remove any tutorial tooltips
+    removeAllTooltips();
 
     // Use the new title screen with icon and tagline
     // Pass run history for returning players
@@ -506,6 +517,19 @@ function showEvent(event) {
 
     // Show the life arc progress indicator
     ui.showLifeArc(state.eventCount, state.maxEvents);
+    
+    // Show first event tutorial hint (only on very first event)
+    if (state.eventCount === 1 && shouldShowHint(TUTORIAL_HINTS.FIRST_EVENT.id)) {
+        setTimeout(() => {
+            const choicesEl = document.getElementById('choices');
+            showTutorialTooltip({
+                ...TUTORIAL_HINTS.FIRST_EVENT,
+                target: choicesEl,
+                position: 'top',
+                autoDismiss: 8000
+            });
+        }, 500);
+    }
 }
 
 // Process tags from an outcome - returns array of newly earned tag IDs
@@ -599,7 +623,21 @@ function resolveEvent(optionIndex) {
     }
     
     // Update inline stats with change feedback
-    updateInlineStats(state.life, Object.keys(statChanges).length > 0 ? statChanges : null);
+    const hasStatChanges = Object.keys(statChanges).length > 0;
+    updateInlineStats(state.life, hasStatChanges ? statChanges : null);
+    
+    // Show first stat change tutorial hint
+    if (hasStatChanges && shouldShowHint(TUTORIAL_HINTS.FIRST_STAT_CHANGE.id)) {
+        setTimeout(() => {
+            const inlineStats = document.getElementById('inline-stats');
+            showTutorialTooltip({
+                ...TUTORIAL_HINTS.FIRST_STAT_CHANGE,
+                target: inlineStats,
+                position: 'bottom',
+                autoDismiss: 6000
+            });
+        }, 800);
+    }
     
     // Record significant choices for later callbacks
     // Record multi-option events (real choices) - check options.length > 1 as the primary condition
@@ -828,6 +866,20 @@ function triggerDeath(reason) {
     ui.showButton('Continue', showSummary);
     updateDebugPanel(state);
     updatePanels();
+    
+    // Show first death tutorial hint
+    if (shouldShowHint(TUTORIAL_HINTS.FIRST_DEATH.id)) {
+        setTimeout(() => {
+            showTutorialTooltip({
+                ...TUTORIAL_HINTS.FIRST_DEATH,
+                position: 'center',
+                autoDismiss: 10000
+            });
+        }, 1000);
+    }
+    
+    // Mark tutorial as complete after first death
+    completeTutorial();
 }
 
 // Show end-of-life summary
