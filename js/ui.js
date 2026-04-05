@@ -46,6 +46,125 @@ export function clear() {
     }
 }
 
+// ============================================
+// INLINE STATS DISPLAY (during gameplay)
+// ============================================
+
+// Render inline stats in the main game area
+export function renderInlineStats(life) {
+    const container = document.getElementById('inline-stats');
+    if (!container) return;
+
+    container.innerHTML = '';
+    container.classList.remove('hidden');
+
+    const stats = [
+        { key: 'health', label: 'Health', value: life.health },
+        { key: 'wealth', label: 'Wealth', value: life.wealth },
+        { key: 'education', label: 'Education', value: life.education },
+        { key: 'connections', label: 'Connections', value: life.connections }
+    ];
+
+    stats.forEach(stat => {
+        const statEl = document.createElement('div');
+        statEl.className = 'inline-stat';
+        statEl.setAttribute('data-stat', stat.key);
+
+        const labelEl = document.createElement('div');
+        labelEl.className = 'inline-stat-label';
+        labelEl.textContent = stat.label;
+
+        const valueEl = document.createElement('div');
+        valueEl.className = 'inline-stat-value';
+        valueEl.textContent = stat.value;
+
+        const barEl = document.createElement('div');
+        barEl.className = 'inline-stat-bar';
+        for (let i = 1; i <= 5; i++) {
+            const pip = document.createElement('div');
+            pip.className = `inline-stat-pip ${i <= stat.value ? 'filled ' + stat.key : ''}`;
+            barEl.appendChild(pip);
+        }
+
+        statEl.appendChild(labelEl);
+        statEl.appendChild(valueEl);
+        statEl.appendChild(barEl);
+        container.appendChild(statEl);
+    });
+}
+
+// Update inline stats with change feedback
+export function updateInlineStats(life, changes = null) {
+    const container = document.getElementById('inline-stats');
+    if (!container) return;
+
+    const stats = [
+        { key: 'health', label: 'Health', value: life.health },
+        { key: 'wealth', label: 'Wealth', value: life.wealth },
+        { key: 'education', label: 'Education', value: life.education },
+        { key: 'connections', label: 'Connections', value: life.connections }
+    ];
+
+    stats.forEach(stat => {
+        const statEl = container.querySelector(`[data-stat="${stat.key}"]`);
+        if (!statEl) return;
+
+        const valueEl = statEl.querySelector('.inline-stat-value');
+        const barEl = statEl.querySelector('.inline-stat-bar');
+
+        // Update value
+        if (valueEl) {
+            valueEl.textContent = stat.value;
+        }
+
+        // Update pips
+        if (barEl) {
+            const pips = barEl.querySelectorAll('.inline-stat-pip');
+            pips.forEach((pip, i) => {
+                pip.className = `inline-stat-pip ${i < stat.value ? 'filled ' + stat.key : ''}`;
+            });
+        }
+
+        // Show change indicator if there's a change
+        if (changes && changes[stat.key]) {
+            const change = changes[stat.key];
+            showStatChangeIndicator(statEl, change);
+        }
+    });
+}
+
+// Show floating stat change indicator
+function showStatChangeIndicator(statEl, change) {
+    // Remove any existing indicator
+    const existing = statEl.querySelector('.stat-change-indicator');
+    if (existing) existing.remove();
+
+    // Add flash class
+    statEl.classList.remove('flash-positive', 'flash-negative');
+    void statEl.offsetWidth; // Force reflow for animation restart
+    statEl.classList.add(change > 0 ? 'flash-positive' : 'flash-negative');
+
+    // Create and show indicator
+    const indicator = document.createElement('div');
+    indicator.className = `stat-change-indicator ${change > 0 ? 'positive' : 'negative'}`;
+    indicator.textContent = change > 0 ? `+${change}` : `${change}`;
+    statEl.appendChild(indicator);
+
+    // Remove indicator after animation
+    setTimeout(() => {
+        indicator.remove();
+        statEl.classList.remove('flash-positive', 'flash-negative');
+    }, 1500);
+}
+
+// Hide inline stats (when not in gameplay)
+export function hideInlineStats() {
+    const container = document.getElementById('inline-stats');
+    if (container) {
+        container.classList.add('hidden');
+    }
+}
+
 // Display the title screen / landing page
 export function showTitleScreen(onBegin, onCollections, runHistory = null, onGacha = null, karma = 0) {
     const contentEl = getContentEl();

@@ -1584,6 +1584,139 @@
             }
         }
 
+        /* Inline Stats Display (during gameplay) */
+        .inline-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 4px;
+            flex-wrap: wrap;
+        }
+
+        .inline-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+            position: relative;
+        }
+
+        .inline-stat-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .inline-stat-value {
+            font-size: 18px;
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .inline-stat-bar {
+            display: flex;
+            gap: 2px;
+            margin-top: 4px;
+        }
+
+        .inline-stat-pip {
+            width: 8px;
+            height: 8px;
+            background: #222;
+            border-radius: 2px;
+            transition: background 0.3s ease;
+        }
+
+        .inline-stat-pip.filled {
+            background: #555;
+        }
+
+        .inline-stat-pip.filled.health {
+            background: #a55;
+        }
+
+        .inline-stat-pip.filled.wealth {
+            background: #5a5;
+        }
+
+        .inline-stat-pip.filled.education {
+            background: #55a;
+        }
+
+        .inline-stat-pip.filled.connections {
+            background: #a5a;
+        }
+
+        /* Stat change feedback */
+        .stat-change-indicator {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            animation: statChangeFloat 1.5s ease-out forwards;
+        }
+
+        .stat-change-indicator.positive {
+            color: #5a5;
+        }
+
+        .stat-change-indicator.negative {
+            color: #a55;
+        }
+
+        @keyframes statChangeFloat {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+            20% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            80% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-10px);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
+        /* Stat flash on change */
+        .inline-stat.flash-positive .inline-stat-value {
+            animation: flashGreen 0.5s ease;
+        }
+
+        .inline-stat.flash-negative .inline-stat-value {
+            animation: flashRed 0.5s ease;
+        }
+
+        @keyframes flashGreen {
+            0%, 100% { color: #aaa; }
+            50% { color: #5f5; text-shadow: 0 0 10px rgba(85, 255, 85, 0.5); }
+        }
+
+        @keyframes flashRed {
+            0%, 100% { color: #aaa; }
+            50% { color: #f55; text-shadow: 0 0 10px rgba(255, 85, 85, 0.5); }
+        }
+
+        /* Hide inline stats when not in event phase */
+        .inline-stats.hidden {
+            display: none;
+        }
+
         /* Responsive */
         @media (max-width: 1100px) {
             #left-panel, #right-panel {
@@ -1631,6 +1764,7 @@
         </div>
 
         <div id="game">
+            <div id="inline-stats" class="inline-stats hidden"></div>
             <div id="content"></div>
             <div id="choices"></div>
         </div>

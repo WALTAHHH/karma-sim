@@ -14,6 +14,7 @@ import {
     getEventTradeoffInfo
 } from './events/index.js';
 import * as ui from './ui.js';
+import { renderInlineStats, updateInlineStats, hideInlineStats } from './ui.js';
 import { checkAchievements } from './achievements.js';
 import { initDebug, updateDebugPanel, registerDebugCallback } from './debug.js';
 import { countries, selectWeightedCountry } from './countries.js';
@@ -190,6 +191,9 @@ function updatePanels() {
 // Title screen
 function showTitle() {
     state.phase = 'title';
+    
+    // Hide inline stats when on title screen
+    hideInlineStats();
 
     // Use the new title screen with icon and tagline
     // Pass run history for returning players
@@ -241,6 +245,7 @@ function showCountryPicker() {
 // Show collections view
 function showCollections() {
     state.phase = 'collections';
+    hideInlineStats();
     ui.showCollectionsView(showTitle);
     updatePanels();
 }
@@ -309,6 +314,10 @@ function startLife() {
 
     const description = getStartDescription(state.life);
     ui.clear();
+    
+    // Show inline stats from birth so players see their starting conditions
+    renderInlineStats(state.life);
+    
     ui.showBirthArt(state.life);
     ui.appendText(description);
     ui.showButton('Continue', nextEvent);
@@ -473,6 +482,9 @@ function showEvent(event) {
     state.trackedData.allEvents.add(event.id);
     persistentTracking.allEvents.add(event.id);
 
+    // Render inline stats at top of game area
+    renderInlineStats(state.life);
+
     // Check for callback to past choices
     const callbackText = getCallbackText(event.id, state.currentStage);
     if (callbackText) {
@@ -559,9 +571,35 @@ function resolveEvent(optionIndex) {
     const result = resolveOutcome(option, state.currentStage, state.life);
     const outcome = result.outcome;
 
+    // Store old stats to calculate changes
+    const oldStats = {
+        health: state.life.health,
+        wealth: state.life.wealth,
+        education: state.life.education,
+        connections: state.life.connections
+    };
+
     // Apply effects
     const oldLife = { ...state.life };
     state.life = applyOutcome(state.life, outcome);
+    
+    // Calculate stat changes for visual feedback
+    const statChanges = {};
+    if (state.life.health !== oldStats.health) {
+        statChanges.health = state.life.health - oldStats.health;
+    }
+    if (state.life.wealth !== oldStats.wealth) {
+        statChanges.wealth = state.life.wealth - oldStats.wealth;
+    }
+    if (state.life.education !== oldStats.education) {
+        statChanges.education = state.life.education - oldStats.education;
+    }
+    if (state.life.connections !== oldStats.connections) {
+        statChanges.connections = state.life.connections - oldStats.connections;
+    }
+    
+    // Update inline stats with change feedback
+    updateInlineStats(state.life, Object.keys(statChanges).length > 0 ? statChanges : null);
     
     // Record significant choices for later callbacks
     // Record multi-option events (real choices) - check options.length > 1 as the primary condition
@@ -795,6 +833,9 @@ function triggerDeath(reason) {
 // Show end-of-life summary
 function showSummary() {
     state.phase = 'summary';
+    
+    // Hide inline stats on summary screen
+    hideInlineStats();
 
     // Update persistent tracking
     persistentTracking.totalLives += 1;
@@ -894,6 +935,7 @@ function showGachaScreen(currentKarma) {
 // Show unlock shop
 function showUnlockShop() {
     state.phase = 'shop';
+    hideInlineStats();
     const karma = getKarma();
     const countryCost = getCountryUnlockCost();
     const eraCost = getEraUnlockCost();
