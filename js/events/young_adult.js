@@ -350,18 +350,18 @@ export const young_adultEvents = [
                 text: 'Set out for adventure',
                 preview: { gains: ['education'], risks: ['wealth'], description: 'See the world' },
                 outcomes: [
-                    { weight: 40, effects: { education: +1, connections: -1 }, karma: 0, description: 'The world teaches lessons no school can.', special: 'migrate' },
-                    { weight: 35, effects: { education: +1, wealth: -1 }, karma: 0, description: 'Rich in experience, poor in pocket.', special: 'migrate' },
-                    { weight: 25, effects: { education: +2, connections: +1 }, karma: 1, description: 'You find yourself and friends along the way.', special: 'migrate' }
+                    { weight: 40, effects: { education: +1, connections: -1 }, karma: 0, description: 'The world teaches lessons no school can.', special: 'migrate', tagAxis: { roots_vs_wings: 1 } },
+                    { weight: 35, effects: { education: +1, wealth: -1 }, karma: 0, description: 'Rich in experience, poor in pocket.', special: 'migrate', tagAxis: { roots_vs_wings: 1 } },
+                    { weight: 25, effects: { education: +2, connections: +1 }, karma: 1, description: 'You find yourself and friends along the way. A wanderer at heart.', special: 'migrate', tagAxis: { roots_vs_wings: 1 }, grantsTag: 'wanderer' }
                 ]
             },
             {
                 text: 'Stay grounded',
                 preview: { gains: ['connections'], risks: [], description: 'Bloom where planted' },
                 outcomes: [
-                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Contentment in the familiar.' },
-                    { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'Stability has its rewards.' },
-                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'But you always wonder what if...' }
+                    { weight: 50, effects: { connections: +1 }, karma: 0, description: 'Contentment in the familiar.', tagAxis: { roots_vs_wings: -1 } },
+                    { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'Stability has its rewards.', tagAxis: { roots_vs_wings: -1 } },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'But you always wonder what if...', tagAxis: { roots_vs_wings: -1 }, grantsTag: 'rooted' }
                 ]
             }
         ]
@@ -1120,18 +1120,18 @@ export const young_adultEvents = [
                     {
                         text: 'Embrace the movement',
                         outcomes: [
-                            { weight: 30, effects: { connections: +1, wealth: -1 }, karma: 1, description: 'Freedom and community, if not stability.' },
-                            { weight: 30, effects: { health: -1, connections: +1 }, karma: 0, description: 'Experimentation has costs.' },
-                            { weight: 25, effects: { education: +1 }, karma: 1, description: 'Consciousness expands.' },
+                            { weight: 30, effects: { connections: +1, wealth: -1 }, karma: 1, description: 'Freedom and community, if not stability.', tagAxis: { tradition_vs_change: -1 } },
+                            { weight: 30, effects: { health: -1, connections: +1 }, karma: 0, description: 'Experimentation has costs.', tagAxis: { tradition_vs_change: -1 } },
+                            { weight: 25, effects: { education: +1 }, karma: 1, description: 'Consciousness expands. You question everything.', tagAxis: { tradition_vs_change: -1 }, grantsTag: 'progressive' },
                             { weight: 15, effects: { connections: -1, health: -1 }, karma: -1, description: 'Lost years in a haze.' }
                         ]
                     },
                     {
                         text: 'Stay conventional',
                         outcomes: [
-                            { weight: 45, effects: { wealth: +1 }, karma: 0, description: 'The straight path has rewards.' },
-                            { weight: 35, effects: {}, karma: 0, description: 'Rebellion passes you by.' },
-                            { weight: 20, effects: { connections: -1 }, karma: 0, description: 'Square in a round world.' }
+                            { weight: 45, effects: { wealth: +1 }, karma: 0, description: 'The straight path has rewards.', tagAxis: { tradition_vs_change: 1 } },
+                            { weight: 35, effects: {}, karma: 0, description: 'Rebellion passes you by.', tagAxis: { tradition_vs_change: 1 } },
+                            { weight: 20, effects: { connections: -1 }, karma: 0, description: 'Square in a round world.', tagAxis: { tradition_vs_change: 1 } }
                         ]
                     }
                 ]
@@ -1598,17 +1598,17 @@ export const young_adultEvents = [
             {
                 text: 'Embrace tradition',
                 outcomes: [
-                    { weight: 45, effects: { connections: +1 }, karma: 0, description: 'Family approves.' },
-                    { weight: 35, effects: {}, karma: 0, description: 'The familiar path.' },
-                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'Constraints chafe.' }
+                    { weight: 45, effects: { connections: +1 }, karma: 0, description: 'Family approves.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 35, effects: {}, karma: 0, description: 'The familiar path.', tagAxis: { tradition_vs_change: 1 } },
+                    { weight: 20, effects: { health: -1 }, karma: 0, description: 'Constraints chafe. But tradition holds.', tagAxis: { tradition_vs_change: 1 }, grantsTag: 'traditionalist' }
                 ]
             },
             {
                 text: 'Pursue modern path',
                 outcomes: [
-                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'New opportunities open.' },
-                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Elders disapprove.' },
-                    { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'The new economy rewards you.' }
+                    { weight: 35, effects: { education: +1 }, karma: 0, description: 'New opportunities open.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 35, effects: { connections: -1 }, karma: 0, description: 'Elders disapprove.', tagAxis: { tradition_vs_change: -1 } },
+                    { weight: 30, effects: { wealth: +1 }, karma: 0, description: 'The new economy rewards you. Change is your ally.', tagAxis: { tradition_vs_change: -1 }, grantsTag: 'progressive' }
                 ]
             }
         ]
