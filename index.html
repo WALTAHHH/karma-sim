@@ -1717,6 +1717,114 @@
             display: none;
         }
 
+        /* How to Play Modal */
+        .help-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            animation: overlayFadeIn 0.3s ease;
+        }
+
+        .help-modal-overlay.fade-out {
+            animation: overlayFadeOut 0.3s ease forwards;
+        }
+
+        .help-modal {
+            background: #111;
+            border: 1px solid #333;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+            animation: revealPop 0.4s ease;
+        }
+
+        .help-modal-title {
+            color: #e0e0e0;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section-title {
+            color: #888;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .help-section-title .icon {
+            font-size: 16px;
+        }
+
+        .help-section-content {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .help-stat-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .help-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .help-stat-item .pip {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .help-stat-item .pip.health { background: #a55; }
+        .help-stat-item .pip.wealth { background: #5a5; }
+        .help-stat-item .pip.education { background: #55a; }
+        .help-stat-item .pip.connections { background: #a5a; }
+
+        .help-modal-close {
+            background: transparent;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 16px;
+            padding: 12px 30px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .help-modal-close:hover {
+            border-color: #888;
+            background: #1a1a1a;
+        }
+
+        .help-modal-close:focus {
+            outline: none;
+            border-color: #aaa;
+        }
+
         /* Responsive */
         @media (max-width: 1100px) {
             #left-panel, #right-panel {
@@ -1750,6 +1858,49 @@
 <body>
     <button id="debug-toggle">DBG</button>
     <div id="debug-panel"></div>
+    
+    <!-- How to Play Modal -->
+    <div id="help-modal" class="help-modal-overlay" style="display: none;">
+        <div class="help-modal">
+            <div class="help-modal-title">How to Play</div>
+            
+            <div class="help-section">
+                <div class="help-section-title"><span class="icon">☸</span> Karma</div>
+                <div class="help-section-content">
+                    Karma is your spiritual currency across lifetimes. Good choices earn karma, which carries forward to improve your next life's starting conditions and unlock new experiences.
+                </div>
+            </div>
+            
+            <div class="help-section">
+                <div class="help-section-title"><span class="icon">📊</span> Stats</div>
+                <div class="help-section-content">
+                    Four stats shape your life:
+                    <div class="help-stat-list">
+                        <div class="help-stat-item"><span class="pip health"></span> Health - survival</div>
+                        <div class="help-stat-item"><span class="pip wealth"></span> Wealth - resources</div>
+                        <div class="help-stat-item"><span class="pip education"></span> Education - knowledge</div>
+                        <div class="help-stat-item"><span class="pip connections"></span> Connections - relationships</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="help-section">
+                <div class="help-section-title"><span class="icon">🎭</span> Choices</div>
+                <div class="help-section-content">
+                    Some events offer choices; others are fate. Your decisions affect your stats and can earn you character traits that shape future outcomes. Choices compound across a lifetime.
+                </div>
+            </div>
+            
+            <div class="help-section">
+                <div class="help-section-title"><span class="icon">🔓</span> Unlocks</div>
+                <div class="help-section-content">
+                    Spend karma between lives to unlock new countries, historical eras, and career paths. Each unlocks new events and opportunities to explore.
+                </div>
+            </div>
+            
+            <button class="help-modal-close" id="help-modal-close">Begin Your Journey</button>
+        </div>
+    </div>
 
     <div id="app-container">
         <div id="left-panel" class="panel-collapsed">

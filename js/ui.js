@@ -165,6 +165,50 @@ export function hideInlineStats() {
     }
 }
 
+// ============================================
+// HELP MODAL
+// ============================================
+
+// Show the "How to Play" modal
+export function showHelpModal(onClose = null) {
+    const modal = document.getElementById('help-modal');
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    modal.classList.remove('fade-out');
+    
+    const closeBtn = document.getElementById('help-modal-close');
+    
+    // Remove any existing listener and add new one
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    
+    newCloseBtn.addEventListener('click', () => {
+        hideHelpModal();
+        if (onClose) onClose();
+    });
+    
+    // Also close on overlay click (outside modal)
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            hideHelpModal();
+            if (onClose) onClose();
+        }
+    }, { once: true });
+}
+
+// Hide the help modal
+export function hideHelpModal() {
+    const modal = document.getElementById('help-modal');
+    if (!modal) return;
+    
+    modal.classList.add('fade-out');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('fade-out');
+    }, 300);
+}
+
 // Display the title screen / landing page
 export function showTitleScreen(onBegin, onCollections, runHistory = null, onGacha = null, karma = 0) {
     const contentEl = getContentEl();
@@ -221,6 +265,13 @@ export function showTitleScreen(onBegin, onCollections, runHistory = null, onGac
     collectionsBtn.textContent = 'Collections';
     collectionsBtn.addEventListener('click', onCollections);
     menu.appendChild(collectionsBtn);
+
+    // How to Play button
+    const helpBtn = document.createElement('button');
+    helpBtn.className = 'begin-button secondary';
+    helpBtn.textContent = 'How to Play';
+    helpBtn.addEventListener('click', () => showHelpModal());
+    menu.appendChild(helpBtn);
 
     titleScreen.appendChild(menu);
     contentEl.appendChild(titleScreen);
