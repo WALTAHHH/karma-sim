@@ -4,6 +4,7 @@ import { getAchievement, achievements, getUnlockedAchievements, getAchievementCo
 import { countries } from './countries.js';
 import { eras } from './eras.js';
 import { jobCategories } from './jobs.js';
+import { showTarotChoices } from './ui/tarotCard.js';
 import {
     getUnlockedCountries,
     getUnlockedEras,
@@ -221,6 +222,160 @@ function showStatChangeIndicator(statEl, change) {
 // Hide inline stats (when not in gameplay)
 export function hideInlineStats() {
     const container = document.getElementById('inline-stats');
+    if (container) {
+        container.classList.add('hidden');
+    }
+}
+
+// ============================================
+// BIRTH STATS PANEL (flavor/immersion)
+// ============================================
+
+// Birth order taglines
+const BIRTH_ORDER_TAGLINES = {
+    only: 'All eyes on you',
+    eldest: 'Expectations rest heavy',
+    middle: 'Easy to overlook',
+    youngest: 'The baby of the family'
+};
+
+// Wealth icons
+const WEALTH_ICONS = {
+    1: '💸', // Poor - money flying away
+    2: '🪙', // Modest
+    3: '💵', // Comfortable
+    4: '💰', // Prosperous
+    5: '👑'  // Wealthy
+};
+
+// Family structure icons
+const FAMILY_ICONS = {
+    nuclear: '👨‍👩‍👧',
+    extended: '👨‍👩‍👧‍👦',
+    single_parent: '👩‍👧',
+    orphaned: '🏚️'
+};
+
+// Setting icons
+const SETTING_ICONS = {
+    urban: '🏙️',
+    suburban: '🏘️',
+    rural: '🌾'
+};
+
+// Render birth stats panel
+export function renderBirthStats(life) {
+    const container = document.getElementById('birth-stats');
+    if (!container) return;
+
+    container.innerHTML = '';
+    container.classList.remove('hidden');
+
+    const family = life.family || {};
+    const birthContext = life.birthContext || {};
+
+    // Wealth
+    const wealthIcon = WEALTH_ICONS[life.wealth] || '💵';
+    const wealthLabel = life.wealthDescriptor || 'unknown';
+    addBirthStat(container, wealthIcon, wealthLabel);
+
+    // Family structure
+    if (family.structure) {
+        const familyIcon = FAMILY_ICONS[family.structure] || '👨‍👩‍👧';
+        const familyLabel = family.structure === 'single_parent' ? 'Single parent' :
+                          family.structure === 'orphaned' ? 'Orphaned' :
+                          family.structure === 'extended' ? 'Extended family' : 'Nuclear';
+        addBirthStat(container, familyIcon, familyLabel);
+    }
+
+    // Siblings & birth order
+    if (family.birthOrder && family.structure !== 'orphaned') {
+        const siblingCount = family.siblingCount || 0;
+        const birthOrder = family.birthOrder;
+        const tagline = BIRTH_ORDER_TAGLINES[birthOrder];
+        
+        let siblingText;
+        if (birthOrder === 'only') {
+            siblingText = 'Only child';
+        } else if (siblingCount === 1) {
+            siblingText = birthOrder === 'eldest' ? '1 younger sibling' : '1 older sibling';
+        } else {
+            siblingText = `${siblingCount} siblings (${birthOrder})`;
+        }
+        
+        addBirthStatWithTagline(container, '👶', siblingText, tagline);
+    }
+
+    // Setting
+    if (birthContext.setting) {
+        const settingIcon = SETTING_ICONS[birthContext.setting] || '🏠';
+        const settingLabel = birthContext.setting.charAt(0).toUpperCase() + birthContext.setting.slice(1);
+        addBirthStat(container, settingIcon, settingLabel);
+    }
+
+    // Remove trailing divider
+    const lastDivider = container.querySelector('.birth-stat-divider:last-child');
+    if (lastDivider) {
+        lastDivider.remove();
+    }
+}
+
+// Helper to add a birth stat element
+function addBirthStat(container, icon, value) {
+    const stat = document.createElement('div');
+    stat.className = 'birth-stat';
+    
+    const iconEl = document.createElement('span');
+    iconEl.className = 'birth-stat-icon';
+    iconEl.textContent = icon;
+    
+    const valueEl = document.createElement('span');
+    valueEl.className = 'birth-stat-value';
+    valueEl.textContent = value;
+    
+    stat.appendChild(iconEl);
+    stat.appendChild(valueEl);
+    container.appendChild(stat);
+    
+    // Add divider except after last element
+    const divider = document.createElement('span');
+    divider.className = 'birth-stat-divider';
+    divider.textContent = '•';
+    container.appendChild(divider);
+}
+
+// Helper to add a birth stat with tagline
+function addBirthStatWithTagline(container, icon, value, tagline) {
+    const stat = document.createElement('div');
+    stat.className = 'birth-stat';
+    
+    const iconEl = document.createElement('span');
+    iconEl.className = 'birth-stat-icon';
+    iconEl.textContent = icon;
+    
+    const valueEl = document.createElement('span');
+    valueEl.className = 'birth-stat-value';
+    valueEl.textContent = value;
+    
+    const taglineEl = document.createElement('span');
+    taglineEl.className = 'birth-stat-tagline';
+    taglineEl.textContent = `"${tagline}"`;
+    
+    stat.appendChild(iconEl);
+    stat.appendChild(valueEl);
+    stat.appendChild(taglineEl);
+    container.appendChild(stat);
+    
+    // Add divider
+    const divider = document.createElement('span');
+    divider.className = 'birth-stat-divider';
+    divider.textContent = '•';
+    container.appendChild(divider);
+}
+
+// Hide birth stats panel
+export function hideBirthStats() {
+    const container = document.getElementById('birth-stats');
     if (container) {
         container.classList.add('hidden');
     }
@@ -509,6 +664,23 @@ export function showEventArt(event) {
 }
 
 export function showChoices(options, onChoice, tradeoffInfo = null) {
+    const choicesEl = getChoicesEl();
+    choicesEl.innerHTML = '';
+    
+    // Use tarot card system for event choices
+    // Wrap onChoice to store the choice text for outcome reference
+    const wrappedOnChoice = (index) => {
+        const option = options[index];
+        window._lastChoiceText = option.text;
+        window._lastChoicePreview = option.preview?.description || null;
+        onChoice(index);
+    };
+    
+    showTarotChoices(options, wrappedOnChoice, choicesEl);
+}
+
+// Legacy button-based choice display (kept for non-event contexts if needed)
+export function showChoicesButtons(options, onChoice, tradeoffInfo = null) {
     const choicesEl = getChoicesEl();
     choicesEl.innerHTML = '';
     

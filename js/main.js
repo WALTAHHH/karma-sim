@@ -14,7 +14,7 @@ import {
     getEventTradeoffInfo
 } from './events/index.js';
 import * as ui from './ui.js';
-import { renderInlineStats, updateInlineStats, hideInlineStats, showKarmicIntro } from './ui.js';
+import { renderInlineStats, updateInlineStats, hideInlineStats, renderBirthStats, hideBirthStats, showKarmicIntro } from './ui.js';
 import { checkAchievements } from './achievements.js';
 import { initDebug, updateDebugPanel, registerDebugCallback } from './debug.js';
 import { countries, selectWeightedCountry } from './countries.js';
@@ -203,6 +203,7 @@ function showTitle() {
     
     // Hide inline stats when on title screen
     hideInlineStats();
+    hideBirthStats();
     
     // Remove any tutorial tooltips
     removeAllTooltips();
@@ -267,6 +268,7 @@ function showCountryPicker() {
 function showCollections() {
     state.phase = 'collections';
     hideInlineStats();
+    hideBirthStats();
     ui.showCollectionsView(showTitle);
     updatePanels();
 }
@@ -338,6 +340,7 @@ function startLife() {
     
     // Show inline stats from birth so players see their starting conditions
     renderInlineStats(state.life);
+    renderBirthStats(state.life);
     
     ui.showBirthArt(state.life);
     ui.appendText(description);
@@ -910,6 +913,7 @@ function showSummary() {
     
     // Hide inline stats on summary screen
     hideInlineStats();
+    hideBirthStats();
 
     // Check if this is the first run BEFORE incrementing
     const isFirstRun = persistentTracking.totalLives === 0;
@@ -1025,6 +1029,7 @@ function showFirstRunPlinko(currentKarma) {
 function showFirstRunComplete() {
     state.phase = 'first_run_complete';
     hideInlineStats();
+    hideBirthStats();
     
     const karma = getKarma();
     ui.showFirstRunComplete(karma, showTitle, showGachaScreen);
@@ -1071,6 +1076,7 @@ function showGachaScreen(currentKarma) {
 function showUnlockShop() {
     state.phase = 'shop';
     hideInlineStats();
+    hideBirthStats();
     const karma = getKarma();
     const countryCost = getCountryUnlockCost();
     const eraCost = getEraUnlockCost();

@@ -13,7 +13,9 @@ import {
     getSiblingCount,
     getFamilyStability,
     getSetting,
-    FAMILY_STRUCTURES
+    getBirthOrder,
+    FAMILY_STRUCTURES,
+    BIRTH_ORDERS
 } from './data.js';
 
 import { initializeTagProgress } from './tags.js';
@@ -469,6 +471,7 @@ export function generateLife(country, year = null, era = null, descendantContext
     const eraId = era?.id || 'contemporary';
     const familyStructure = getFamilyStructure(eraId);
     const siblingCount = getSiblingCount(eraId);
+    const birthOrder = familyStructure !== 'orphaned' ? getBirthOrder(siblingCount) : null;
     const familyStability = getFamilyStability(wealth);
     const setting = getSetting(country.incomeLevel);
     const parentOccupation = familyStructure !== 'orphaned'
@@ -498,6 +501,7 @@ export function generateLife(country, year = null, era = null, descendantContext
         family: {
             structure: familyStructure,
             siblingCount: siblingCount,
+            birthOrder: birthOrder,
             stability: familyStability,
             parentOccupation: parentOccupation
         },
@@ -583,15 +587,34 @@ const settingDescriptors = {
     suburban: ['growing', 'quiet', 'comfortable']
 };
 
-// Sibling phrases
-function getSiblingPhrase(count) {
-    if (count === 0) return 'You are an only child.';
-    if (count === 1) return 'You have one sibling.';
-    if (count === 2) return 'You have two siblings.';
-    if (count === 3) return 'You are one of four children.';
-    if (count === 4) return 'You are one of five children.';
-    if (count === 5) return 'You are one of six children.';
-    return `You are one of ${count + 1} children.`;
+// Sibling phrases with birth order context
+function getSiblingPhrase(count, birthOrder) {
+    if (count === 0 || birthOrder === 'only') {
+        return 'You are an only child — all eyes on you.';
+    }
+    
+    const totalKids = count + 1;
+    let phrase = '';
+    
+    if (birthOrder === 'eldest') {
+        if (count === 1) phrase = 'You have a younger sibling';
+        else if (count === 2) phrase = 'You have two younger siblings';
+        else phrase = `You are the eldest of ${totalKids} children`;
+        return phrase + ' — expectations rest heavy.';
+    }
+    
+    if (birthOrder === 'youngest') {
+        if (count === 1) phrase = 'You have an older sibling';
+        else if (count === 2) phrase = 'You have two older siblings';
+        else phrase = `You are the youngest of ${totalKids} children`;
+        return phrase + ' — the baby of the family.';
+    }
+    
+    // Middle child
+    if (totalKids === 3) phrase = 'You are the middle of three children';
+    else if (totalKids === 4) phrase = 'You are one of four children, somewhere in the middle';
+    else phrase = `You grow up amid ${count} siblings`;
+    return phrase + ' — easy to overlook.';
 }
 
 // Family structure phrases
@@ -693,7 +716,7 @@ export function getStartDescription(life) {
 
     // Siblings
     if (family.structure !== 'orphaned') {
-        parts.push(getSiblingPhrase(family.siblingCount));
+        parts.push(getSiblingPhrase(family.siblingCount, family.birthOrder));
     }
 
     // Family stability (subtle)

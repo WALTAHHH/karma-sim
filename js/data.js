@@ -174,6 +174,14 @@ export const settingByIncomeLevel = {
 // Setting names
 export const SETTINGS = ['urban', 'rural', 'suburban'];
 
+// Birth order types
+export const BIRTH_ORDERS = {
+    only: { id: 'only', name: 'Only child', tagline: 'All eyes on you' },
+    eldest: { id: 'eldest', name: 'Eldest', tagline: 'Expectations rest heavy' },
+    middle: { id: 'middle', name: 'Middle child', tagline: 'Easy to overlook' },
+    youngest: { id: 'youngest', name: 'Youngest', tagline: 'The baby of the family' }
+};
+
 // Get random parent occupation for era and wealth
 export function getParentOccupation(eraId, wealth) {
     const eraOccupations = parentOccupations[eraId] || parentOccupations.contemporary;
@@ -206,6 +214,22 @@ export function getFamilyStability(wealth) {
 export function getSetting(incomeLevel) {
     const weights = settingByIncomeLevel[incomeLevel] || settingByIncomeLevel['upper-middle'];
     return SETTINGS[weightedRandomIndex(weights)];
+}
+
+// Get birth order based on sibling count
+export function getBirthOrder(siblingCount) {
+    if (siblingCount === 0) {
+        return 'only';
+    }
+    // Random birth order among siblings
+    const position = Math.floor(Math.random() * (siblingCount + 1)); // 0 to siblingCount
+    if (position === 0) {
+        return 'eldest';
+    } else if (position === siblingCount) {
+        return 'youngest';
+    } else {
+        return 'middle';
+    }
 }
 
 // Utility: weighted random returning 0-indexed result
