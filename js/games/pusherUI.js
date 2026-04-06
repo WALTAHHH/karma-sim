@@ -161,15 +161,34 @@ function doDrop(position = dropPosition) {
     
     const item = game.dropCoin(position);
     
-    // Sound based on what dropped
+    // Sound and feedback based on what dropped
     if (item.type === 'coin') {
-        playTick(400 + Math.random() * 100);
+        playTick(450 + Math.random() * 100);
+        screenShake = 2;
     } else {
-        playChime(500);
+        // Special item dropped! Build excitement
+        playChime(500, 2, 'triangle');
+        screenShake = 4;
+        
+        // Flash to draw attention to the special drop
+        const rarityFlash = {
+            'smallGem': 0.05,
+            'token': 0.08,
+            'mediumGem': 0.1,
+            'star': 0.12,
+            'trophy': 0.15,
+            'crystal': 0.18,
+            'jackpot': 0.25,
+            'megaJackpot': 0.3
+        };
+        const flashIntensity = rarityFlash[item.type] || 0.05;
+        screenFlash(item.color, flashIntensity);
+        
+        // Notification for rare drops
+        if (['trophy', 'crystal', 'jackpot', 'megaJackpot'].includes(item.type)) {
+            addNotification(`${item.icon} Dropped!`, item.color, 1200);
+        }
     }
-    
-    // Small screen shake
-    screenShake = 3;
     
     updateStats();
 }
@@ -182,17 +201,43 @@ function doMultiDrop(count) {
     spendFn(cost);
     updateKarmaDisplay();
     
-    // Staggered drops across the platform
-    for (let i = 0; i < count; i++) {
-        setTimeout(() => {
-            const spread = 0.3;
-            const pos = dropPosition + (Math.random() - 0.5) * spread;
-            game.dropCoin(Math.max(0.05, Math.min(0.95, pos)));
-            playTick(350 + Math.random() * 150);
-        }, i * 60);
+    // Dramatic multi-drop effect
+    const isMassive = count >= 25;
+    const isLarge = count >= 10;
+    
+    // Initial impact notification
+    if (isMassive) {
+        addNotification('💥 COIN STORM! 💥', '#fbbf24', 2000);
+        screenFlash('#fbbf24', 0.15);
+    } else if (isLarge) {
+        addNotification('🌧️ Rain incoming!', '#60a5fa', 1500);
     }
     
-    screenShake = 8;
+    // Staggered drops with escalating intensity
+    const baseDelay = isMassive ? 40 : isLarge ? 50 : 60;
+    const spread = isMassive ? 0.5 : isLarge ? 0.4 : 0.3;
+    
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            // Spread pattern: more spread as drops continue
+            const progressSpread = spread * (0.5 + (i / count) * 0.5);
+            const pos = dropPosition + (Math.random() - 0.5) * progressSpread;
+            game.dropCoin(Math.max(0.05, Math.min(0.95, pos)));
+            
+            // Escalating pitch creates anticipation
+            const pitch = 300 + (i / count) * 200 + Math.random() * 100;
+            playTick(pitch);
+            
+            // Mini shakes throughout
+            if (i % 5 === 0) {
+                screenShake = Math.max(screenShake, 3);
+            }
+        }, i * baseDelay);
+    }
+    
+    // Initial screen shake based on count
+    screenShake = isMassive ? 15 : isLarge ? 10 : 6;
+    
     updateStats();
 }
 
@@ -244,6 +289,7 @@ function handleCollections(items) {
     let totalKarma = 0;
     let biggestWin = 0;
     let gotJackpot = false;
+    let consecutiveCount = items.length;
     
     for (const item of items) {
         const result = game.collectPrize(item);
@@ -254,35 +300,67 @@ function handleCollections(items) {
             gotJackpot = true;
         }
         
-        // Visual feedback based on prize type
+        // Enhanced visual feedback based on prize type
         if (item.type === 'coin') {
-            playTick(600);
-            spawnParticles(item.color, 3);
+            // Satisfying coin collect - pitch varies with combo
+            const pitch = 500 + Math.min(result.combo * 50, 400);
+            playTick(pitch);
+            spawnParticles(item.color, 5 + Math.min(result.combo, 5));
+            screenShake = Math.max(screenShake, 2);
         } else if (item.type === 'jackpot' || item.type === 'megaJackpot') {
+            // MASSIVE feedback for jackpots
             playWinSound('legendary');
             spawnFireworks(item.color);
-            screenFlash(item.color, 0.4);
-            screenShake = 20;
-            addNotification(`🌟 JACKPOT! +${result.value}☯`, '#fbbf24', 3000);
+            spawnFireworks('#ff6b6b');
+            screenFlash(item.color, 0.5);
+            screenShake = 25;
+            addNotification(`🌟 JACKPOT! +${result.value}☯`, '#fbbf24', 3500);
+            
+            // Extra dramatic pause effect
+            setTimeout(() => spawnFireworks('#c084fc'), 300);
         } else if (item.type === 'crystal' || item.type === 'trophy') {
             playWinSound('epic');
-            spawnParticles(item.color, 25);
-            screenFlash(item.color, 0.2);
-            screenShake = 10;
+            spawnParticles(item.color, 30);
+            spawnFireworks(item.color);
+            screenFlash(item.color, 0.25);
+            screenShake = 12;
+            addNotification(`${item.icon} +${result.value}☯`, item.color, 2000);
+        } else if (item.type === 'star' || item.type === 'mediumGem') {
+            playWinSound('rare');
+            spawnParticles(item.color, 18);
+            screenFlash(item.color, 0.15);
+            screenShake = Math.max(screenShake, 6);
+            addNotification(`${item.icon} +${result.value}☯`, item.color, 1500);
         } else {
+            // smallGem, token
             playWinSound('uncommon');
-            spawnParticles(item.color, 12);
+            spawnParticles(item.color, 10);
+            screenShake = Math.max(screenShake, 4);
         }
         
-        // Combo notification
-        if (result.combo > 2) {
-            addNotification(`${result.combo}× COMBO!`, '#f472b6', 1500);
+        // Enhanced combo notification
+        if (result.combo >= 3) {
+            const comboColors = ['#f472b6', '#ff6b6b', '#fbbf24', '#c084fc'];
+            const colorIndex = Math.min(result.combo - 3, comboColors.length - 1);
+            const comboSize = result.combo >= 5 ? '🔥' : result.combo >= 4 ? '⚡' : '';
+            addNotification(`${comboSize}${result.combo}× COMBO!${comboSize}`, comboColors[colorIndex], 1800);
+            
+            // Extra shake for big combos
+            if (result.combo >= 5) {
+                screenShake = Math.max(screenShake, 10);
+            }
         }
         
         // Gold rush notification
         if (result.isGoldRush && item.type !== 'coin') {
-            addNotification('2× GOLD RUSH!', '#fbbf24', 1000);
+            addNotification('✨ 2× GOLD RUSH! ✨', '#fbbf24', 1200);
         }
+    }
+    
+    // Multi-item cascade bonus feedback
+    if (consecutiveCount >= 3 && !gotJackpot) {
+        addNotification(`💰 ${consecutiveCount} items!`, '#4ade80', 1500);
+        screenShake = Math.max(screenShake, 8);
     }
     
     if (totalKarma > 0) {
@@ -290,8 +368,9 @@ function handleCollections(items) {
         addFn(totalKarma);
         updateKarmaDisplay(totalKarma);
         
-        if (items.length > 1 && !gotJackpot) {
-            addNotification(`+${totalKarma}☯`, '#4ade80', 1500);
+        // Show total for multi-drops
+        if (items.length > 1 && !gotJackpot && totalKarma > 3) {
+            addNotification(`+${totalKarma}☯ total`, '#4ade80', 1800);
         }
     }
     
@@ -377,15 +456,30 @@ function render(game) {
     ctx.lineWidth = 3;
     ctx.strokeRect(platform.x, platform.y, platform.width, platform.edgeY - platform.y);
     
-    // Pusher bar with 3D depth
+    // Pusher bar with enhanced 3D depth and motion feel
     const barX = game.pusherX;
+    const isMovingForward = game.pusherDirection > 0;
     
-    // Main pusher body
+    // Motion blur effect when moving forward (the impactful direction)
+    if (isMovingForward) {
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = '#888';
+        ctx.fillRect(barX - 8, pusherBar.y + 2, 8, pusherBar.height - 4);
+        ctx.restore();
+    }
+    
+    // Shadow under pusher for depth
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(barX + 3, pusherBar.y + pusherBar.height, pusherWidth - 2, 4);
+    
+    // Main pusher body with metallic gradient
     const pusherGrad = ctx.createLinearGradient(0, pusherBar.y, 0, pusherBar.y + pusherBar.height);
-    pusherGrad.addColorStop(0, '#aaa');
-    pusherGrad.addColorStop(0.3, '#888');
-    pusherGrad.addColorStop(0.7, '#666');
-    pusherGrad.addColorStop(1, '#555');
+    pusherGrad.addColorStop(0, '#c0c0c0');
+    pusherGrad.addColorStop(0.15, '#a8a8a8');
+    pusherGrad.addColorStop(0.5, '#787878');
+    pusherGrad.addColorStop(0.85, '#606060');
+    pusherGrad.addColorStop(1, '#505050');
     ctx.fillStyle = pusherGrad;
     
     ctx.beginPath();
@@ -396,42 +490,75 @@ function render(game) {
     }
     ctx.fill();
     
-    // Top shine
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.fillRect(barX + 2, pusherBar.y + 2, pusherWidth - 4, 4);
+    // Front face highlight (3D effect)
+    const faceGrad = ctx.createLinearGradient(barX + pusherWidth - 8, 0, barX + pusherWidth, 0);
+    faceGrad.addColorStop(0, 'rgba(255,255,255,0)');
+    faceGrad.addColorStop(1, 'rgba(255,255,255,0.2)');
+    ctx.fillStyle = faceGrad;
+    ctx.fillRect(barX + pusherWidth - 8, pusherBar.y, 8, pusherBar.height);
     
-    // Mega push indicator
+    // Top shine with subtle movement
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(barX + 3, pusherBar.y + 2, pusherWidth - 6, 3);
+    
+    // Edge highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX + 0.5, pusherBar.y + 0.5, pusherWidth - 1, pusherBar.height - 1);
+    
+    // Mega push indicator with pulsing glow
     if (game.activeEvent?.type === 'megaPush') {
+        const megaPulse = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 10 * megaPulse;
         ctx.strokeStyle = '#fbbf24';
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 4]);
+        ctx.lineDashOffset = -(Date.now() / 30) % 8;
         ctx.strokeRect(barX - 2, pusherBar.y - 2, pusherWidth + 4, pusherBar.height + 4);
         ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
+        ctx.shadowBlur = 0;
     }
     
-    // Win zone
-    const winZoneGrad = ctx.createLinearGradient(0, platform.edgeY - 25, 0, platform.edgeY + 20);
-    winZoneGrad.addColorStop(0, 'rgba(74, 222, 128, 0.1)');
-    winZoneGrad.addColorStop(0.5, 'rgba(74, 222, 128, 0.25)');
-    winZoneGrad.addColorStop(1, 'rgba(74, 222, 128, 0.4)');
-    ctx.fillStyle = winZoneGrad;
-    ctx.fillRect(platform.x, platform.edgeY - 25, platform.width, 45);
+    // Win zone with pulsing effect
+    const pulse = Math.sin(Date.now() / 300) * 0.1 + 0.9;
     
-    // Win zone line
-    ctx.strokeStyle = '#4ade80';
-    ctx.lineWidth = 2;
+    // Check if any items are near the edge (for enhanced glow)
+    const itemsNearEdge = game.items.filter(i => i.edgeTension > 0.3).length;
+    const edgeExcitement = Math.min(itemsNearEdge / 5, 1);
+    
+    const winZoneGrad = ctx.createLinearGradient(0, platform.edgeY - 30, 0, platform.edgeY + 25);
+    const baseAlpha = 0.15 + edgeExcitement * 0.15;
+    winZoneGrad.addColorStop(0, `rgba(74, 222, 128, ${baseAlpha * 0.3})`);
+    winZoneGrad.addColorStop(0.4, `rgba(74, 222, 128, ${baseAlpha * pulse})`);
+    winZoneGrad.addColorStop(1, `rgba(74, 222, 128, ${baseAlpha * 1.5})`);
+    ctx.fillStyle = winZoneGrad;
+    ctx.fillRect(platform.x, platform.edgeY - 30, platform.width, 55);
+    
+    // Animated win zone line
+    const dashOffset = (Date.now() / 50) % 12;
+    ctx.strokeStyle = `rgba(74, 222, 128, ${0.6 + edgeExcitement * 0.3})`;
+    ctx.lineWidth = 2 + edgeExcitement;
     ctx.setLineDash([8, 4]);
+    ctx.lineDashOffset = -dashOffset;
     ctx.beginPath();
     ctx.moveTo(platform.x, platform.edgeY);
     ctx.lineTo(platform.x + platform.width, platform.edgeY);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
     
-    // "WIN" text
-    ctx.fillStyle = 'rgba(74, 222, 128, 0.6)';
-    ctx.font = 'bold 12px monospace';
+    // "WIN" text with glow when items are near
+    if (edgeExcitement > 0.2) {
+        ctx.shadowColor = '#4ade80';
+        ctx.shadowBlur = 8 + edgeExcitement * 8;
+    }
+    ctx.fillStyle = `rgba(74, 222, 128, ${0.5 + edgeExcitement * 0.4})`;
+    ctx.font = `bold ${12 + edgeExcitement * 2}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('▼ WIN ▼', platform.x + platform.width / 2, platform.edgeY + 15);
+    ctx.fillText('▼ WIN ▼', platform.x + platform.width / 2, platform.edgeY + 16);
+    ctx.shadowBlur = 0;
     
     // Draw items (back to front for proper layering)
     const sortedItems = [...game.items].sort((a, b) => a.y - b.y);
@@ -439,24 +566,42 @@ function render(game) {
         drawItem(item, platform);
     }
     
-    // Draw drop preview
+    // Draw drop preview with enhanced visibility
     const dropX = platform.x + 15 + dropPosition * (platform.width - 30);
     
-    // Drop line
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    // Animated drop guide
+    const dropPulse = Math.sin(Date.now() / 200) * 0.2 + 0.8;
+    const dropBob = Math.sin(Date.now() / 300) * 3;
+    
+    // Glowing drop zone indicator at landing point
+    ctx.save();
+    ctx.globalAlpha = 0.3 * dropPulse;
+    ctx.fillStyle = '#fbbf24';
     ctx.beginPath();
-    ctx.moveTo(dropX, 15);
+    ctx.ellipse(dropX, platform.y + 5, 15, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    
+    // Drop line with animated dash
+    ctx.strokeStyle = `rgba(251, 191, 36, ${0.4 * dropPulse})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.lineDashOffset = -(Date.now() / 50) % 10;
+    ctx.beginPath();
+    ctx.moveTo(dropX, 35);
     ctx.lineTo(dropX, platform.y - 5);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
     
-    // Drop coin preview
-    ctx.font = '22px serif';
+    // Drop coin preview with subtle animation
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 8 * dropPulse;
+    ctx.font = '24px serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🪙', dropX, 25);
+    ctx.fillText('🪙', dropX, 20 + dropBob);
+    ctx.shadowBlur = 0;
     
     // Gold rush overlay
     if (game.activeEvent?.type === 'goldRush') {
@@ -475,17 +620,85 @@ function render(game) {
 }
 
 function drawItem(item, platform) {
-    // 2.5D depth effect: items scale larger as they approach the edge
+    // Enhanced 2.5D depth effect
     const depthRange = platform.edgeY - platform.y;
-    const depthFactor = (item.y - platform.y) / depthRange;
-    const scale = 0.85 + depthFactor * 0.3;
+    const depthFactor = Math.max(0, Math.min(1, (item.y - platform.y) / depthRange));
     
-    // Draw icon with scaling (no save/restore for perf)
-    const size = item.radius * 1.8 * scale;
-    ctx.font = `${size}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(item.icon, item.x + (item.wobble || 0), item.y);
+    // More dramatic scale range: 0.7x at back to 1.3x at front
+    const scale = 0.7 + depthFactor * 0.6;
+    
+    // Y offset for "3D" positioning (items appear to lift as they come forward)
+    const depthOffset = depthFactor * -8;
+    
+    const drawX = item.x + (item.wobble || 0);
+    const drawY = item.y + depthOffset;
+    
+    // Glow effect for special items and edge tension
+    const isSpecial = item.type !== 'coin';
+    const tension = item.edgeTension || 0;
+    
+    if (isSpecial || item.glow > 0 || tension > 0.5) {
+        ctx.save();
+        
+        // Determine glow color and intensity
+        let glowColor = item.color;
+        let glowIntensity = 0;
+        
+        if (tension > 0.5) {
+            // Pulsing red/gold glow for edge tension
+            const pulse = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+            glowColor = '#ff6b6b';
+            glowIntensity = (tension - 0.5) * 2 * pulse * 15;
+        } else if (item.glow > 0) {
+            glowIntensity = item.glow * 12;
+        } else if (isSpecial) {
+            // Subtle constant glow for special items
+            glowIntensity = 6 + Math.sin(Date.now() / 200 + item.wobblePhase) * 3;
+        }
+        
+        if (glowIntensity > 0) {
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = glowIntensity * scale;
+        }
+        
+        const size = item.radius * 2 * scale;
+        ctx.font = `${size}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.icon, drawX, drawY);
+        ctx.restore();
+    } else {
+        // Regular coin - no glow for performance
+        const size = item.radius * 2 * scale;
+        ctx.font = `${size}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.icon, drawX, drawY);
+    }
+    
+    // Flash overlay effect (when just pushed)
+    if (item.flash > 0.1) {
+        ctx.save();
+        ctx.globalAlpha = item.flash * 0.6;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(drawX, drawY, item.radius * scale * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // Drop shadow for depth (scaled by position)
+    if (depthFactor > 0.3) {
+        ctx.save();
+        ctx.globalAlpha = depthFactor * 0.3;
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        const shadowOffset = depthFactor * 4;
+        ctx.beginPath();
+        ctx.ellipse(drawX + shadowOffset, drawY + item.radius * scale + shadowOffset, 
+                    item.radius * scale * 0.8, item.radius * scale * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
 function addNotification(text, color = '#fff', duration = 2000) {

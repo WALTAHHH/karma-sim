@@ -5,17 +5,22 @@ const PUSHER_KEY = 'karma_simulator_pusher';
 
 /**
  * Physics constants - can be tuned via debug tools
+ * Tuned for satisfying "push" feel and natural coin behavior
  * @type {Object}
  */
 export const PHYSICS = {
-    gravity: 0.3,
-    friction: 0.85,
-    bounce: 0.4,
-    maxVelocity: 15,        // Cap velocity to prevent tunneling
-    settleThresholdVX: 0.1,
-    settleThresholdVY: 0.3,
-    settleFrames: 30,
-    collisionDamping: 0.5
+    gravity: 0.35,           // Slightly stronger gravity for weight
+    friction: 0.92,          // Higher friction = coins slow down more naturally
+    bounce: 0.35,            // Slightly less bouncy = more controlled
+    maxVelocity: 18,         // Higher cap for dramatic pushes
+    settleThresholdVX: 0.08, // Stricter settle = coins rest more naturally
+    settleThresholdVY: 0.25,
+    settleFrames: 25,
+    collisionDamping: 0.6,   // More energy transfer in collisions
+    pusherForce: 1.2,        // NEW: Multiplier for pusher impact
+    pusherLift: 0.4,         // NEW: Upward lift when pushed
+    edgeTension: 40,         // NEW: Distance from edge where tension kicks in
+    cascadeBonus: 0.15       // NEW: Extra force when coins hit other moving coins
 };
 
 /**
@@ -35,30 +40,31 @@ export const PHYSICS = {
 
 /**
  * Upgrade definitions with balanced progression curve
- * Cost curve: ~2x each level, keeping early game accessible
+ * Cost curve: Accessible early game, satisfying power growth
+ * Rebalanced for better feel and clearer impact
  * @type {Object.<string, Upgrade>}
  */
 export const UPGRADES = {
     platform: {
         name: 'Platform Width',
         icon: '📐',
-        description: 'Wider platform holds more coins',
+        description: 'Wider platform = more coins = bigger cascades',
         levels: [
-            { cost: 0, value: 280, label: 'Standard' },
-            { cost: 20, value: 320, label: 'Wide' },
-            { cost: 50, value: 360, label: 'Extra Wide' },
-            { cost: 100, value: 400, label: 'Maximum' }
+            { cost: 0, value: 260, label: 'Standard' },
+            { cost: 15, value: 310, label: 'Wide' },
+            { cost: 45, value: 360, label: 'Extra Wide' },
+            { cost: 100, value: 420, label: 'Maximum' }
         ]
     },
     pusherSpeed: {
         name: 'Pusher Speed',
         icon: '⚡',
-        description: 'Faster cycles = more action',
+        description: 'Faster cycles = more action & combos',
         levels: [
-            { cost: 0, value: 1.2, label: 'Normal' },
-            { cost: 25, value: 1.6, label: 'Quick' },
-            { cost: 60, value: 2.0, label: 'Fast' },
-            { cost: 120, value: 2.5, label: 'Turbo' }
+            { cost: 0, value: 1.0, label: 'Normal' },
+            { cost: 18, value: 1.4, label: 'Quick' },
+            { cost: 50, value: 1.9, label: 'Fast' },
+            { cost: 110, value: 2.5, label: 'Turbo' }
         ]
     },
     prizeQuality: {
@@ -67,31 +73,31 @@ export const UPGRADES = {
         description: 'Better prizes appear more often',
         levels: [
             { cost: 0, value: 0, label: 'Basic' },
-            { cost: 30, value: 8, label: 'Good' },
-            { cost: 75, value: 18, label: 'Great' },
-            { cost: 150, value: 30, label: 'Amazing' }
+            { cost: 25, value: 10, label: 'Good' },
+            { cost: 65, value: 22, label: 'Great' },
+            { cost: 140, value: 38, label: 'Amazing' }
         ]
     },
     multiDrop: {
         name: 'Multi-Drop',
         icon: '🌧️',
-        description: 'Drop more coins at once',
+        description: 'Rain coins for epic cascades',
         levels: [
             { cost: 0, value: 5, label: '×5' },
-            { cost: 35, value: 10, label: '×10' },
-            { cost: 80, value: 25, label: '×25' },
-            { cost: 180, value: 50, label: '×50' }
+            { cost: 30, value: 12, label: '×12' },
+            { cost: 75, value: 30, label: '×30' },
+            { cost: 175, value: 60, label: '×60' }
         ]
     },
     autoDrop: {
         name: 'Auto-Dropper',
         icon: '🤖',
-        description: 'Automatically drops coins over time',
+        description: 'Hands-free karma farming',
         levels: [
             { cost: 0, value: 0, label: 'Off' },
-            { cost: 40, value: 10000, label: 'Slow (10s)' },
-            { cost: 90, value: 5000, label: 'Medium (5s)' },
-            { cost: 200, value: 2000, label: 'Fast (2s)' }
+            { cost: 35, value: 8000, label: 'Slow (8s)' },
+            { cost: 85, value: 4000, label: 'Medium (4s)' },
+            { cost: 190, value: 1500, label: 'Fast (1.5s)' }
         ]
     }
 };
@@ -252,7 +258,7 @@ export class PusherItem {
             this.vx = -Math.abs(this.vx) * PHYSICS.bounce;
         }
         
-        // Pusher bar collision
+        // Pusher bar collision - THIS IS THE MONEY SHOT
         const pusherRight = pusherX + pusherWidth;
         const pusherTop = pusherBar.y;
         const pusherBottom = pusherBar.y + pusherBar.height;
@@ -261,12 +267,25 @@ export class PusherItem {
             this.y - this.radius < pusherBottom &&
             this.x > pusherX && 
             this.x < pusherRight) {
-            // Push forward and up
-            this.vy = -Math.abs(this.vy) * 0.3;
-            this.vx += pusherSpeed * 0.6;
-            this.y = pusherTop - this.radius;
-            this.flash = 1;
+            // Calculate impact based on pusher movement
+            const impactForce = pusherSpeed * PHYSICS.pusherForce;
+            
+            // Push forward with real force
+            this.vx += impactForce * 0.9;
+            
+            // Lift coins slightly (satisfying "pop" feeling)
+            this.vy = -Math.abs(this.vy) * PHYSICS.pusherLift - (impactForce * 0.3);
+            
+            // Add slight randomness for natural feel
+            this.vx += (Math.random() - 0.5) * impactForce * 0.3;
+            
+            // Position correction
+            this.y = pusherTop - this.radius - 1;
+            
+            // Visual feedback - stronger flash on hard hits
+            this.flash = Math.min(1, impactForce / 2);
             this.glow = 1;
+            this.justPushed = true; // Track for cascade effects
         }
         
         // Platform floor collision (but allow falling off edge)
@@ -289,11 +308,27 @@ export class PusherItem {
             this.settled = false;
         }
         
-        // Wobble animation near edge (builds tension!)
-        if (this.y + this.radius > platform.edgeY - 35) {
-            this.wobble = Math.sin(Date.now() / 80 + this.wobblePhase) * 2.5;
+        // Enhanced edge tension - coins near the edge feel "about to fall"
+        const edgeDist = platform.edgeY - (this.y + this.radius);
+        if (edgeDist < PHYSICS.edgeTension) {
+            // Tension increases as coin gets closer to edge
+            const tensionFactor = 1 - (edgeDist / PHYSICS.edgeTension);
+            
+            // Faster, more intense wobble as coin approaches edge
+            const wobbleSpeed = 80 - tensionFactor * 40; // 80ms -> 40ms
+            const wobbleAmount = 2 + tensionFactor * 4;   // 2 -> 6 pixels
+            this.wobble = Math.sin(Date.now() / wobbleSpeed + this.wobblePhase) * wobbleAmount;
+            
+            // Track edge proximity for visual effects
+            this.edgeTension = tensionFactor;
+            
+            // Add slight "pull" toward edge when very close (gravity assist)
+            if (tensionFactor > 0.7 && !this.settled) {
+                this.vy += 0.05 * tensionFactor;
+            }
         } else {
             this.wobble *= 0.9;
+            this.edgeTension = 0;
         }
         
         // Return true if fallen off (collected!)
@@ -530,6 +565,7 @@ export class PusherGame {
     
     /**
      * Resolve collision between two items (called once per pair)
+     * Enhanced for satisfying "domino effect" cascades
      */
     resolveCollision(a, b) {
         const dx = b.x - a.x;
@@ -544,22 +580,47 @@ export class PusherGame {
         const nx = dx / dist;
         const ny = dy / dist;
         
-        // Separate items
-        a.x -= nx * overlap;
-        a.y -= ny * overlap;
-        b.x += nx * overlap;
-        b.y += ny * overlap;
+        // Separate items with slight extra push
+        const separation = overlap * 1.05;
+        a.x -= nx * separation;
+        a.y -= ny * separation;
+        b.x += nx * separation;
+        b.y += ny * separation;
         
-        // Exchange velocity
+        // Exchange velocity with improved physics
         const dvx = a.vx - b.vx;
         const dvy = a.vy - b.vy;
         const dot = dvx * nx + dvy * ny;
         
+        // Only process if items moving toward each other
+        if (dot <= 0) return;
+        
         const damping = PHYSICS.collisionDamping;
-        a.vx -= dot * nx * damping;
-        a.vy -= dot * ny * damping;
-        b.vx += dot * nx * damping;
-        b.vy += dot * ny * damping;
+        
+        // Cascade bonus: if one item was just pushed, transfer more energy
+        let cascadeMultiplier = 1;
+        if (a.justPushed || b.justPushed) {
+            cascadeMultiplier = 1 + PHYSICS.cascadeBonus;
+            // Clear the flag after transfer
+            a.justPushed = false;
+            b.justPushed = false;
+            // Mark receiver as "pushed" for chain reaction
+            if (a.justPushed) b.justPushed = true;
+            if (b.justPushed) a.justPushed = true;
+        }
+        
+        const force = dot * damping * cascadeMultiplier;
+        a.vx -= force * nx;
+        a.vy -= force * ny;
+        b.vx += force * nx;
+        b.vy += force * ny;
+        
+        // Small flash on significant collision
+        const impactStrength = Math.abs(dot);
+        if (impactStrength > 1.5) {
+            a.flash = Math.min(0.5, impactStrength * 0.1);
+            b.flash = Math.min(0.5, impactStrength * 0.1);
+        }
     }
 
     /**
