@@ -210,12 +210,16 @@ export function hideHelpModal() {
 }
 
 // Display the title screen / landing page
-export function showTitleScreen(onBegin, onCollections, runHistory = null, onGacha = null, karma = 0) {
+// Options object can contain: { hasCompletedFirstRun: boolean }
+export function showTitleScreen(onBegin, onCollections, runHistory = null, onGacha = null, karma = 0, options = {}) {
     const contentEl = getContentEl();
     const choicesEl = getChoicesEl();
 
     contentEl.innerHTML = '';
     choicesEl.innerHTML = '';
+
+    // Check if player has completed their first run
+    const hasCompletedFirstRun = options.hasCompletedFirstRun || (runHistory && runHistory.length > 0);
 
     // Create title screen container
     const titleScreen = document.createElement('div');
@@ -250,8 +254,8 @@ export function showTitleScreen(onBegin, onCollections, runHistory = null, onGac
     beginBtn.addEventListener('click', onBegin);
     menu.appendChild(beginBtn);
 
-    // Gacha button (if karma > 0 and callback provided)
-    if (onGacha && karma > 0) {
+    // Gacha button (if karma > 0 and callback provided) - only show after first run
+    if (onGacha && karma > 0 && hasCompletedFirstRun) {
         const gachaBtn = document.createElement('button');
         gachaBtn.className = 'begin-button gacha-title-btn';
         gachaBtn.innerHTML = '🎮 Game Hub';
@@ -259,19 +263,23 @@ export function showTitleScreen(onBegin, onCollections, runHistory = null, onGac
         menu.appendChild(gachaBtn);
     }
 
-    // Collections button
-    const collectionsBtn = document.createElement('button');
-    collectionsBtn.className = 'begin-button secondary';
-    collectionsBtn.textContent = 'Collections';
-    collectionsBtn.addEventListener('click', onCollections);
-    menu.appendChild(collectionsBtn);
+    // Collections button - only show after first run
+    if (hasCompletedFirstRun) {
+        const collectionsBtn = document.createElement('button');
+        collectionsBtn.className = 'begin-button secondary';
+        collectionsBtn.textContent = 'Collections';
+        collectionsBtn.addEventListener('click', onCollections);
+        menu.appendChild(collectionsBtn);
+    }
 
-    // How to Play button
-    const helpBtn = document.createElement('button');
-    helpBtn.className = 'begin-button secondary';
-    helpBtn.textContent = 'How to Play';
-    helpBtn.addEventListener('click', () => showHelpModal());
-    menu.appendChild(helpBtn);
+    // How to Play button - only show after first run
+    if (hasCompletedFirstRun) {
+        const helpBtn = document.createElement('button');
+        helpBtn.className = 'begin-button secondary';
+        helpBtn.textContent = 'How to Play';
+        helpBtn.addEventListener('click', () => showHelpModal());
+        menu.appendChild(helpBtn);
+    }
 
     titleScreen.appendChild(menu);
     contentEl.appendChild(titleScreen);
@@ -689,10 +697,30 @@ export function showSummary(summary) {
     const contentEl = getContentEl();
     contentEl.innerHTML = '';
 
-    // Title
+    // Title - special message for first run
     const title = document.createElement('p');
-    title.textContent = 'Your life has ended.';
+    if (summary.isFirstRun) {
+        title.innerHTML = '<span style="color: #888;">Your first life has ended.</span>';
+    } else {
+        title.textContent = 'Your life has ended.';
+    }
     contentEl.appendChild(title);
+
+    // First run celebration message
+    if (summary.isFirstRun) {
+        const celebration = document.createElement('div');
+        celebration.style.textAlign = 'center';
+        celebration.style.margin = '20px 0';
+        celebration.style.padding = '20px';
+        celebration.style.background = 'linear-gradient(180deg, rgba(251, 191, 36, 0.1) 0%, transparent 100%)';
+        celebration.style.border = '1px solid rgba(251, 191, 36, 0.3)';
+        celebration.innerHTML = `
+            <div style="font-size: 32px; margin-bottom: 10px;">✨</div>
+            <div style="color: #fbbf24; font-size: 16px; margin-bottom: 8px;">Karma Earned!</div>
+            <div style="color: #888; font-size: 14px;">Your choices echo forward into future lives.</div>
+        `;
+        contentEl.appendChild(celebration);
+    }
 
     // Death art (if life data available)
     if (summary.life) {
@@ -1061,6 +1089,111 @@ export function showFeatureCelebration(featureName, description, onContinue) {
 
     // Auto-focus the continue button
     setTimeout(() => continueBtn.focus(), 600);
+}
+
+// Show first run completion screen with game unlock preview
+export function showFirstRunComplete(karma, onContinue, onGameHub) {
+    const contentEl = getContentEl();
+    const choicesEl = getChoicesEl();
+
+    contentEl.innerHTML = '';
+    choicesEl.innerHTML = '';
+
+    // Create celebration container
+    const container = document.createElement('div');
+    container.className = 'first-run-complete';
+    container.style.textAlign = 'center';
+    container.style.animation = 'fadeIn 0.8s ease forwards';
+
+    // Celebration header
+    const header = document.createElement('div');
+    header.style.marginBottom = '30px';
+    header.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 15px;">✨</div>
+        <div style="font-size: 24px; color: #e0e0e0; margin-bottom: 10px;">Welcome to Karma</div>
+        <div style="font-size: 14px; color: #888; font-style: italic;">Your journey across lifetimes has begun.</div>
+    `;
+    container.appendChild(header);
+
+    // Karma display
+    const karmaDisplay = document.createElement('div');
+    karmaDisplay.style.marginBottom = '30px';
+    karmaDisplay.style.padding = '20px';
+    karmaDisplay.style.background = '#111';
+    karmaDisplay.style.border = '1px solid #333';
+    karmaDisplay.innerHTML = `
+        <div style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Your Karma</div>
+        <div style="font-size: 36px; color: #ffd700;">☯ ${karma}</div>
+    `;
+    container.appendChild(karmaDisplay);
+
+    // Games preview
+    const gamesPreview = document.createElement('div');
+    gamesPreview.style.marginBottom = '30px';
+    gamesPreview.innerHTML = `
+        <div style="color: #888; font-size: 14px; margin-bottom: 15px;">More games unlock as you play!</div>
+        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+            <div class="game-preview-card unlocked">
+                <span style="font-size: 24px;">📍</span>
+                <span style="font-size: 11px; color: #4ade80;">PLINKO</span>
+            </div>
+            <div class="game-preview-card locked">
+                <span style="font-size: 24px; opacity: 0.3;">🎰</span>
+                <span style="font-size: 11px; color: #555;">LOCKED</span>
+            </div>
+            <div class="game-preview-card locked">
+                <span style="font-size: 24px; opacity: 0.3;">🎡</span>
+                <span style="font-size: 11px; color: #555;">LOCKED</span>
+            </div>
+            <div class="game-preview-card locked">
+                <span style="font-size: 24px; opacity: 0.3;">🎴</span>
+                <span style="font-size: 11px; color: #555;">LOCKED</span>
+            </div>
+        </div>
+    `;
+    container.appendChild(gamesPreview);
+
+    // Add styles for game preview cards
+    const style = document.createElement('style');
+    style.textContent = `
+        .game-preview-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background: #151515;
+            border: 1px solid #333;
+            min-width: 60px;
+        }
+        .game-preview-card.unlocked {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+        }
+        .game-preview-card.locked {
+            opacity: 0.6;
+        }
+        .first-run-complete {
+            opacity: 0;
+        }
+    `;
+    document.head.appendChild(style);
+
+    contentEl.appendChild(container);
+
+    // Buttons
+    if (karma > 0 && onGameHub) {
+        const hubBtn = document.createElement('button');
+        hubBtn.className = 'begin-button gacha-title-btn';
+        hubBtn.innerHTML = '🎮 Game Hub';
+        hubBtn.addEventListener('click', () => onGameHub(karma));
+        choicesEl.appendChild(hubBtn);
+    }
+
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'begin-button secondary';
+    continueBtn.textContent = 'Begin Next Life';
+    continueBtn.addEventListener('click', onContinue);
+    choicesEl.appendChild(continueBtn);
 }
 
 // Show tag notification when a character trait is earned
@@ -1524,6 +1657,14 @@ export function showCollectionsView(onBack) {
     contentEl.innerHTML = '';
     choicesEl.innerHTML = '';
 
+    // Back button at TOP
+    const backBtn = document.createElement('button');
+    backBtn.className = 'begin-button secondary collections-back-btn';
+    backBtn.textContent = '← Back';
+    backBtn.style.marginBottom = '20px';
+    backBtn.addEventListener('click', onBack);
+    contentEl.appendChild(backBtn);
+
     // Title
     const title = document.createElement('p');
     title.textContent = 'Collections';
@@ -1541,41 +1682,45 @@ export function showCollectionsView(onBack) {
     const unlockedCountries = getUnlockedCountries();
     const unlockedCountryIds = new Set(unlockedCountries.map(c => c.id));
 
-    // Eras section
+    // Eras section (collapsible)
     const eraProgress = getEraUnlockProgress();
-    contentEl.appendChild(createCollectionSection(
+    contentEl.appendChild(createCollapsibleCollectionSection(
         'Eras',
         `${eraProgress.unlocked}/${eraProgress.total}`,
-        renderErasGrid(eras, unlockedEraIds)
+        renderErasGrid(eras, unlockedEraIds),
+        true // Start expanded
     ));
 
-    // Careers section
+    // Careers section (collapsible)
     const careerProgress = getJobCategoryUnlockProgress();
-    contentEl.appendChild(createCollectionSection(
+    contentEl.appendChild(createCollapsibleCollectionSection(
         'Careers',
         `${careerProgress.unlocked}/${careerProgress.total}`,
-        renderCareersGrid(jobCategories, unlockedCategoryIds)
+        renderCareersGrid(jobCategories, unlockedCategoryIds),
+        false // Start collapsed
     ));
 
-    // Countries section
+    // Countries section (collapsible)
     const countryProgress = getUnlockProgress();
-    contentEl.appendChild(createCollectionSection(
+    contentEl.appendChild(createCollapsibleCollectionSection(
         'Countries',
         `${countryProgress.unlocked}/${countryProgress.total}`,
-        renderCountriesGrid(countries, unlockedCountryIds)
+        renderCountriesGrid(countries, unlockedCountryIds),
+        false // Start collapsed
     ));
 
-    // Traits section
+    // Traits section (collapsible)
     const traitProgress = getTagDiscoveryProgress();
     const discoveredTagIds = new Set(getDiscoveredTags());
-    contentEl.appendChild(createCollectionSection(
+    contentEl.appendChild(createCollapsibleCollectionSection(
         'Traits',
         `${traitProgress.discovered}/${traitProgress.total}`,
-        renderTraitsGrid(tags, discoveredTagIds)
+        renderTraitsGrid(tags, discoveredTagIds),
+        false // Start collapsed
     ));
 
-    // Back button
-    showButton('Back', onBack);
+    // Clear the choices area (no bottom back button needed)
+    choicesEl.innerHTML = '';
 }
 
 // Create a collection section container
@@ -1591,6 +1736,64 @@ function createCollectionSection(title, count, gridElement) {
     `;
     section.appendChild(header);
     section.appendChild(gridElement);
+
+    return section;
+}
+
+// Create a collapsible collection section with dropdown arrow
+function createCollapsibleCollectionSection(title, count, gridElement, startExpanded = true) {
+    const section = document.createElement('div');
+    section.className = 'collections-section collapsible-section';
+    if (!startExpanded) {
+        section.classList.add('collapsed');
+    }
+
+    const header = document.createElement('div');
+    header.className = 'collections-header collapsible-header';
+    header.style.cursor = 'pointer';
+    header.innerHTML = `
+        <span class="collections-title">
+            <span class="collapse-arrow">${startExpanded ? '▼' : '▶'}</span>
+            ${title}
+        </span>
+        <span class="collections-count">${count}</span>
+    `;
+    
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'collections-content';
+    contentWrapper.style.overflow = 'hidden';
+    contentWrapper.style.transition = 'max-height 0.3s ease, opacity 0.2s ease';
+    if (!startExpanded) {
+        contentWrapper.style.maxHeight = '0';
+        contentWrapper.style.opacity = '0';
+    } else {
+        contentWrapper.style.maxHeight = '2000px';
+        contentWrapper.style.opacity = '1';
+    }
+    contentWrapper.appendChild(gridElement);
+
+    // Toggle on header click
+    header.addEventListener('click', () => {
+        const isCollapsed = section.classList.contains('collapsed');
+        const arrow = header.querySelector('.collapse-arrow');
+        
+        if (isCollapsed) {
+            // Expand
+            section.classList.remove('collapsed');
+            contentWrapper.style.maxHeight = '2000px';
+            contentWrapper.style.opacity = '1';
+            arrow.textContent = '▼';
+        } else {
+            // Collapse
+            section.classList.add('collapsed');
+            contentWrapper.style.maxHeight = '0';
+            contentWrapper.style.opacity = '0';
+            arrow.textContent = '▶';
+        }
+    });
+
+    section.appendChild(header);
+    section.appendChild(contentWrapper);
 
     return section;
 }

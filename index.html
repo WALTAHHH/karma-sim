@@ -1347,6 +1347,39 @@
             font-size: 13px;
         }
 
+        /* Collapsible collection sections */
+        .collapsible-header {
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .collapse-arrow {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 12px;
+            transition: transform 0.2s;
+            color: #666;
+        }
+
+        .collapsible-section.collapsed .collapse-arrow {
+            transform: rotate(0deg);
+        }
+
+        .collections-content {
+            padding-top: 15px;
+        }
+
+        .collections-back-btn {
+            display: inline-block;
+            padding: 10px 20px !important;
+            font-size: 14px !important;
+        }
+
         .unlock-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));

@@ -55,6 +55,7 @@ import {
     getTagKarmaModifier
 } from './tags.js';
 import { showGameHub, hideGameHub, setDebugMode as setGachaDebugMode } from './games/gameHub.js';
+import { showPlinkoGame, hidePlinkoGame } from './games/plinkoUI.js';
 import {
     shouldShowTutorial,
     shouldShowHint,
@@ -213,7 +214,8 @@ function showTitle() {
         : null;
 
     const karma = getKarma();
-    ui.showTitleScreen(handleBegin, showCollections, runHistory, showGachaScreen, karma);
+    const hasCompletedFirstRun = persistentTracking.totalLives > 0;
+    ui.showTitleScreen(handleBegin, showCollections, runHistory, showGachaScreen, karma, { hasCompletedFirstRun });
     updatePanels();
 }
 
@@ -896,6 +898,9 @@ function showSummary() {
     // Hide inline stats on summary screen
     hideInlineStats();
 
+    // Check if this is the first run BEFORE incrementing
+    const isFirstRun = persistentTracking.totalLives === 0;
+
     // Update persistent tracking
     persistentTracking.totalLives += 1;
     persistentTracking.totalKarma = getKarma();
@@ -936,7 +941,8 @@ function showSummary() {
         karmaAfter: getKarma(),
         achievements: newlyUnlocked,
         life: state.life,  // Pass life for death art
-        tags: state.life.tags || []  // Character traits earned this life
+        tags: state.life.tags || [],  // Character traits earned this life
+        isFirstRun: isFirstRun  // Flag for first run celebration
     };
 
     ui.showSummary(summary);
@@ -946,18 +952,51 @@ function showSummary() {
 
     // Check if player can continue as descendant
     const hasChildren = state.life.hasChildren;
-    if (hasChildren) {
-        ui.showButton('Continue as Descendant', () => startAsDescendant(state.life));
-    }
 
-    if (karma > 0) {
-        ui.showButton('🎮 Game Hub', () => showGachaScreen(karma), hasChildren);
-        ui.showButton('Spend Karma', showUnlockShop, true);
+    // FIRST RUN: Special experience - force Plinko directly
+    if (isFirstRun && karma > 0) {
+        // Show a special first-run message then go directly to Plinko
+        ui.showButton('🎲 Try Your Luck', () => showFirstRunPlinko(karma), false);
         ui.showButton('Begin again', showTitle, true);
     } else {
-        ui.showButton('Begin again', showTitle, hasChildren);
+        // Normal flow for returning players
+        if (hasChildren) {
+            ui.showButton('Continue as Descendant', () => startAsDescendant(state.life));
+        }
+
+        if (karma > 0) {
+            ui.showButton('🎮 Game Hub', () => showGachaScreen(karma), hasChildren);
+            ui.showButton('Spend Karma', showUnlockShop, true);
+            ui.showButton('Begin again', showTitle, true);
+        } else {
+            ui.showButton('Begin again', showTitle, hasChildren);
+        }
     }
     updateDebugPanel(state);
+    updatePanels();
+}
+
+// First run Plinko experience - forced directly into the game
+function showFirstRunPlinko(currentKarma) {
+    // Import and show Plinko directly (skip Game Hub)
+    showPlinkoGame(
+        currentKarma,
+        (amount) => spendKarma(amount),  // Spend karma function
+        (amount) => adjustKarma(amount), // Add karma function (for rewards)
+        () => {
+            // After Plinko, show welcome message with locked games preview
+            showFirstRunComplete();
+        }
+    );
+}
+
+// Show first run completion screen with game unlock preview
+function showFirstRunComplete() {
+    state.phase = 'first_run_complete';
+    hideInlineStats();
+    
+    const karma = getKarma();
+    ui.showFirstRunComplete(karma, showTitle, showGachaScreen);
     updatePanels();
 }
 
