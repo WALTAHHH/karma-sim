@@ -360,3 +360,251 @@
     from { opacity: 1; }
     to { opacity: 0; }
 }
+
+/* ===== JUICE ENHANCEMENTS ===== */
+
+/* Drop button pressed state */
+.drop-btn.pressed {
+    transform: scale(0.95) translateY(2px) !important;
+    box-shadow: none !important;
+}
+
+.drop-btn.center.pressed {
+    background: linear-gradient(180deg, #cc4444 0%, #bb3333 100%);
+}
+
+/* Jackpot win celebration */
+.plinko-game.jackpot-win {
+    animation: jackpotCelebration 0.6s ease infinite;
+    box-shadow: 
+        0 0 60px rgba(255, 215, 0, 0.6),
+        0 0 120px rgba(255, 215, 0, 0.3),
+        inset 0 0 30px rgba(255, 215, 0, 0.1);
+    border-color: #ffd700;
+}
+
+@keyframes jackpotCelebration {
+    0%, 100% { 
+        transform: scale(1); 
+        filter: brightness(1);
+    }
+    50% { 
+        transform: scale(1.02); 
+        filter: brightness(1.1);
+    }
+}
+
+/* Big win (5x) celebration */
+.plinko-game.big-win {
+    animation: bigWinPulse 0.4s ease infinite;
+    box-shadow: 
+        0 0 40px rgba(255, 107, 181, 0.5),
+        0 0 80px rgba(255, 107, 181, 0.2);
+    border-color: #ff6bb5;
+}
+
+@keyframes bigWinPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.01); }
+}
+
+/* Result content enhancements */
+.result-content.jackpot {
+    background: linear-gradient(135deg, rgba(20, 15, 0, 0.95) 0%, rgba(40, 30, 0, 0.95) 100%);
+    border-width: 4px;
+    animation: resultPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+               jackpotGlow 1s ease infinite;
+}
+
+@keyframes jackpotGlow {
+    0%, 100% { 
+        box-shadow: 0 0 30px #ffd700, 0 0 60px rgba(255, 215, 0, 0.5), 0 0 90px rgba(255, 215, 0, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 50px #ffd700, 0 0 100px rgba(255, 215, 0, 0.6), 0 0 150px rgba(255, 215, 0, 0.3);
+    }
+}
+
+.result-content.jackpot .result-emoji {
+    animation: bounceEmoji 0.5s ease infinite;
+}
+
+@keyframes bounceEmoji {
+    0%, 100% { transform: scale(1) rotate(-5deg); }
+    50% { transform: scale(1.2) rotate(5deg); }
+}
+
+.result-content.big-win {
+    animation: resultPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+               bigWinGlow 0.8s ease infinite;
+}
+
+@keyframes bigWinGlow {
+    0%, 100% { 
+        box-shadow: 0 0 25px var(--mult-color), 0 0 50px var(--mult-glow);
+    }
+    50% { 
+        box-shadow: 0 0 40px var(--mult-color), 0 0 80px var(--mult-glow);
+    }
+}
+
+.result-content.bust {
+    background: linear-gradient(135deg, rgba(30, 10, 10, 0.95) 0%, rgba(20, 5, 5, 0.95) 100%);
+    animation: resultPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+               bustShake 0.5s ease;
+}
+
+@keyframes bustShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+}
+
+.result-content.bust .result-emoji {
+    animation: bustSad 1s ease;
+}
+
+@keyframes bustSad {
+    0% { transform: scale(1.5) rotate(0); }
+    50% { transform: scale(0.8) rotate(-10deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+/* Payout text animations */
+.result-payout.positive {
+    color: #4ade80;
+    animation: payoutBounce 0.5s ease;
+}
+
+.result-payout.negative {
+    color: #ff4444;
+}
+
+@keyframes payoutBounce {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Notification popup */
+.plinko-notification {
+    font-family: 'Arial Black', sans-serif;
+    letter-spacing: 2px;
+}
+
+@keyframes notificationPop {
+    0% { transform: translate(-50%, -50%) scale(0); }
+    50% { transform: translate(-50%, -50%) scale(1.2); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes notificationFade {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -70%) scale(0.8); }
+}
+
+/* Canvas glow effects for different win states */
+#plinko-canvas {
+    transition: box-shadow 0.3s ease;
+}
+
+.plinko-game.jackpot-win #plinko-canvas {
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.5),
+        inset 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.plinko-game.big-win #plinko-canvas {
+    box-shadow: 
+        0 0 20px rgba(255, 107, 181, 0.4),
+        inset 0 0 15px rgba(255, 107, 181, 0.1);
+}
+
+/* Enhanced title during wins */
+.plinko-game.jackpot-win .plinko-title {
+    background: linear-gradient(45deg, #ffd700, #ffec8b, #ffd700);
+    background-size: 200% 200%;
+    animation: shimmer 0.5s ease infinite;
+}
+
+.plinko-game.big-win .plinko-title {
+    background: linear-gradient(45deg, #ff6bb5, #ff9ed8, #ff6bb5);
+    background-size: 200% 200%;
+    animation: shimmer 0.8s ease infinite;
+}
+
+/* Karma display pulse on win */
+.plinko-karma-display .karma-amount.pulse {
+    animation: karmaPulse 0.4s ease;
+}
+
+@keyframes karmaPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); color: #4ade80; }
+    100% { transform: scale(1); }
+}
+
+/* Drop zone hover enhancement */
+.drop-zone:hover .drop-btn:not(.disabled) {
+    box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+/* Lucky peg glow hint in UI */
+.plinko-game[data-has-lucky="true"]::before {
+    content: '✨ Lucky peg active! ✨';
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+    padding: 5px 20px;
+    border-radius: 10px;
+    font-size: 0.8em;
+    color: #ffd700;
+    animation: luckyHint 2s ease infinite;
+    z-index: 5;
+}
+
+@keyframes luckyHint {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Debug panel styles (if needed) */
+.plinko-debug {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 1px dashed #4a4a6a;
+}
+
+.plinko-debug .debug-title {
+    font-size: 0.9em;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.plinko-debug .debug-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.plinko-debug .debug-btn {
+    padding: 6px 12px;
+    background: #2a2a4a;
+    border: 1px solid #4a4a6a;
+    border-radius: 6px;
+    color: #aaa;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.plinko-debug .debug-btn:hover {
+    background: #3a3a5a;
+    color: #fff;
+}
