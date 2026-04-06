@@ -262,3 +262,258 @@
     z-index: 10001;
     overflow: hidden;
 }
+
+/* ============ LOCKED GAME CARDS ============ */
+.game-card.locked {
+    opacity: 0.7;
+    cursor: not-allowed;
+    position: relative;
+    background: linear-gradient(180deg, #1a1a25 0%, #12121a 100%);
+    border-color: #2a2a3a;
+}
+
+.game-card.locked:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #2a2a3a;
+    background: linear-gradient(180deg, #1a1a25 0%, #12121a 100%);
+}
+
+.game-lock-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+}
+
+.game-lock-icon {
+    font-size: 1.4em;
+    opacity: 0.8;
+}
+
+.game-icon-locked {
+    filter: grayscale(0.8) brightness(0.6);
+}
+
+.game-card.locked .game-name {
+    color: #888;
+}
+
+.game-unlock-requirement {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a2a3a;
+}
+
+.unlock-label {
+    font-size: 0.75em;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.unlock-progress-bar {
+    height: 6px;
+    background: #1a1a25;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.unlock-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.unlock-progress-text {
+    font-size: 0.7em;
+    color: #555;
+    text-align: right;
+}
+
+/* ============ HUB PROGRESS SECTION ============ */
+.hub-progress-section {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+}
+
+.hub-progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85em;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.hub-progress-game {
+    color: #e0e0e0;
+}
+
+.hub-progress-nums {
+    color: #4ade80;
+    font-weight: bold;
+}
+
+.hub-progress-bar {
+    height: 8px;
+    background: #1a1a25;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.hub-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+}
+
+.hub-all-unlocked {
+    text-align: center;
+}
+
+.hub-all-unlocked .hub-progress-label {
+    justify-content: center;
+    color: #4ade80;
+    font-size: 1em;
+}
+
+/* ============ GAME UNLOCK CELEBRATION ============ */
+.game-unlock-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000;
+    animation: unlockFadeIn 0.4s ease-out;
+}
+
+.game-unlock-overlay.fade-out {
+    animation: unlockFadeOut 0.4s ease-out forwards;
+}
+
+@keyframes unlockFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes unlockFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.game-unlock-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.unlock-particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    top: -10px;
+    animation: particleFall 2s ease-out forwards;
+}
+
+@keyframes particleFall {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg) scale(0.5);
+        opacity: 0;
+    }
+}
+
+.game-unlock-reveal {
+    text-align: center;
+    z-index: 1;
+    animation: unlockRevealPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes unlockRevealPop {
+    0% { 
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    60% { 
+        transform: scale(1.1);
+    }
+    100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.game-unlock-label {
+    font-size: 1.2em;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 25px;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    animation: labelPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes labelPulse {
+    0%, 100% { text-shadow: 0 0 20px rgba(251, 191, 36, 0.5); }
+    50% { text-shadow: 0 0 40px rgba(251, 191, 36, 0.8); }
+}
+
+.game-unlock-icon {
+    font-size: 5em;
+    margin-bottom: 15px;
+    animation: iconBounceUnlock 0.8s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+}
+
+@keyframes iconBounceUnlock {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.game-unlock-name {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.game-unlock-desc {
+    font-size: 1em;
+    color: #888;
+    margin-bottom: 30px;
+}
+
+.game-unlock-continue {
+    background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+    border: none;
+    color: #000;
+    font-family: inherit;
+    font-size: 1.1em;
+    font-weight: bold;
+    padding: 15px 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
+}
+
+.game-unlock-continue:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(74, 222, 128, 0.5);
+    background: linear-gradient(180deg, #5eead4 0%, #4ade80 100%);
+}

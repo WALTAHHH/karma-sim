@@ -1,6 +1,6 @@
 // Main game loop and state machine
 
-import { getKarma, adjustKarma, spendKarma } from './karma.js';
+import { getKarma, adjustKarma, spendKarma, addToTotalKarmaEarned } from './karma.js';
 import { resetChoiceMemory, rememberChoice, getCallbackText } from './choiceMemory.js';
 import { generateLife, getStartDescription, getEndDescription, applyJob, checkForChildren, generateDescendantContext, recordMigration } from './life.js';
 import {
@@ -665,6 +665,11 @@ function resolveEvent(optionIndex) {
     if (outcome.karma) {
         const newKarma = adjustKarma(outcome.karma);
         state.trackedData.karmaChange += outcome.karma;
+        
+        // Track total karma earned (only positive gains)
+        if (outcome.karma > 0) {
+            addToTotalKarmaEarned(outcome.karma);
+        }
 
         // Track max/min karma in this run
         if (newKarma > state.trackedData.maxKarmaInRun) {
@@ -982,7 +987,13 @@ function showFirstRunPlinko(currentKarma) {
     showPlinkoGame(
         currentKarma,
         (amount) => spendKarma(amount),  // Spend karma function
-        (amount) => adjustKarma(amount), // Add karma function (for rewards)
+        (amount) => {
+            // Track positive karma gains for unlock progression
+            if (amount > 0) {
+                addToTotalKarmaEarned(amount);
+            }
+            return adjustKarma(amount);  // Add karma function (for rewards)
+        },
         () => {
             // After Plinko, show welcome message with locked games preview
             showFirstRunComplete();
@@ -1022,7 +1033,13 @@ function showGachaScreen(currentKarma) {
     showGameHub(
         currentKarma,
         (amount) => spendKarma(amount),  // Spend karma function
-        (amount) => adjustKarma(amount), // Add karma function (for rewards)
+        (amount) => {
+            // Track positive karma gains for unlock progression
+            if (amount > 0) {
+                addToTotalKarmaEarned(amount);
+            }
+            return adjustKarma(amount);  // Add karma function (for rewards)
+        },
         () => {
             // On close, refresh the summary screen
             showSummary();

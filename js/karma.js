@@ -1,6 +1,7 @@
 // Karma persistence and influence calculations
 
 const KARMA_KEY = 'karma_simulator_karma';
+const TOTAL_KARMA_EARNED_KEY = 'karma_simulator_total_earned';
 const MIN_KARMA = -100;
 const MAX_KARMA = 100;
 
@@ -29,6 +30,27 @@ export function spendKarma(amount) {
         return setKarma(current - amount);
     }
     return false;
+}
+
+// === Total Karma Earned (Lifetime) ===
+// This tracks ALL karma ever earned, not current balance
+// Used for unlocking games and showing progression
+
+export function getTotalKarmaEarned() {
+    const stored = localStorage.getItem(TOTAL_KARMA_EARNED_KEY);
+    return stored ? parseInt(stored, 10) : 0;
+}
+
+export function addToTotalKarmaEarned(amount) {
+    if (amount <= 0) return getTotalKarmaEarned();
+    const current = getTotalKarmaEarned();
+    const newTotal = current + amount;
+    localStorage.setItem(TOTAL_KARMA_EARNED_KEY, newTotal.toString());
+    return newTotal;
+}
+
+export function resetTotalKarmaEarned() {
+    localStorage.removeItem(TOTAL_KARMA_EARNED_KEY);
 }
 
 // Karma influence on starting conditions
