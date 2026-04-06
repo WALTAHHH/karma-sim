@@ -224,6 +224,9 @@ export function updateClaw(deltaTime, canvasWidth, canvasHeight) {
     claw.swayAngle += claw.swayVelocity;
     claw.swayAngle = Math.max(-0.3, Math.min(0.3, claw.swayAngle));
     
+    // Update prize physics every frame
+    updatePrizePhysics(deltaTime, canvasWidth, canvasHeight);
+    
     // Phase-specific logic
     switch (gameState.phase) {
         case 'positioning':
@@ -239,6 +242,11 @@ export function updateClaw(deltaTime, canvasWidth, canvasHeight) {
             const dropSpeed = 4;
             if (claw.y < claw.targetY) {
                 claw.y += dropSpeed;
+                
+                // Check for collisions with prizes during descent
+                const clawTipY = claw.y + 30; // Claw tip position
+                checkClawCollisions(claw.x, clawTipY);
+                
                 if (gameState.callbacks.onClawMove) {
                     gameState.callbacks.onClawMove(claw);
                 }
@@ -316,6 +324,125 @@ export function updateClaw(deltaTime, canvasWidth, canvasHeight) {
     return gameState;
 }
 
+// Apply bounce physics to a prize when claw collides but doesn't grab
+function applyBouncePhysics(prize, clawX, clawY) {
+    // Calculate direction away from claw
+    const dx = prize.x - clawX;
+    const dy = prize.y - clawY;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    
+    // Normalize direction
+    const nx = dx / dist;
+    const ny = dy / dist;
+    
+    // Base bounce force scaled by rarity (smaller = lighter = more bounce)
+    const bounceForce = 15 + (40 - prize.size) * 0.5;
+    
+    // Add some randomness to make it feel natural
+    const randomAngle = (Math.random() - 0.5) * 0.6; // ±0.3 radians
+    const cos = Math.cos(randomAngle);
+    const sin = Math.sin(randomAngle);
+    
+    // Rotate the bounce direction slightly
+    const bounceDx = (nx * cos - ny * sin) * bounceForce;
+    const bounceDy = (nx * sin + ny * cos) * bounceForce;
+    
+    // Initialize velocity if not present
+    if (!prize.vx) prize.vx = 0;
+    if (!prize.vy) prize.vy = 0;
+    
+    // Apply bounce impulse
+    prize.vx += bounceDx;
+    prize.vy += bounceDy;
+    
+    // Add some rotation wobble
+    prize.wobbleVelocity = (Math.random() - 0.5) * 0.3;
+    
+    // Mark as bouncing for visual feedback
+    prize.bouncing = true;
+    setTimeout(() => { prize.bouncing = false; }, 300);
+}
+
+// Update prize physics (call this in updateClaw)
+function updatePrizePhysics(deltaTime, canvasWidth, canvasHeight) {
+    const friction = 0.92;
+    const gravity = 0.3;
+    const pitTop = 200;
+    const pitBottom = canvasHeight - 130;
+    const pitLeft = 40;
+    const pitRight = canvasWidth - 40;
+    
+    for (const prize of gameState.prizes) {
+        if (prize.grabbed) continue;
+        
+        // Apply velocity if present
+        if (prize.vx || prize.vy) {
+            prize.x += prize.vx || 0;
+            prize.y += prize.vy || 0;
+            
+            // Apply friction
+            prize.vx = (prize.vx || 0) * friction;
+            prize.vy = (prize.vy || 0) * friction;
+            
+            // Apply gravity (settle down)
+            prize.vy += gravity;
+            
+            // Boundary constraints
+            const radius = prize.size / 2;
+            if (prize.x < pitLeft + radius) {
+                prize.x = pitLeft + radius;
+                prize.vx = Math.abs(prize.vx) * 0.5;
+            }
+            if (prize.x > pitRight - radius) {
+                prize.x = pitRight - radius;
+                prize.vx = -Math.abs(prize.vx) * 0.5;
+            }
+            if (prize.y > pitBottom - radius) {
+                prize.y = pitBottom - radius;
+                prize.vy = -Math.abs(prize.vy) * 0.3;
+            }
+            if (prize.y < pitTop + radius) {
+                prize.y = pitTop + radius;
+                prize.vy = Math.abs(prize.vy) * 0.3;
+            }
+            
+            // Stop if velocity is negligible
+            if (Math.abs(prize.vx) < 0.1 && Math.abs(prize.vy) < 0.5) {
+                prize.vx = 0;
+                prize.vy = 0;
+            }
+        }
+        
+        // Apply rotation wobble
+        if (prize.wobbleVelocity) {
+            prize.rotation += prize.wobbleVelocity;
+            prize.wobbleVelocity *= 0.95;
+            if (Math.abs(prize.wobbleVelocity) < 0.01) {
+                prize.wobbleVelocity = 0;
+            }
+        }
+    }
+}
+
+// Check for collisions with prizes during claw descent
+function checkClawCollisions(clawX, clawY) {
+    const collisionRadius = 30; // Claw collision area
+    
+    for (const prize of gameState.prizes) {
+        if (prize.grabbed) continue;
+        
+        const dx = prize.x - clawX;
+        const dy = prize.y - clawY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const minDist = collisionRadius + prize.size / 2;
+        
+        if (dist < minDist) {
+            // Collision! Apply bounce
+            applyBouncePhysics(prize, clawX, clawY);
+        }
+    }
+}
+
 // Attempt to grab a prize at current claw position
 function attemptGrab() {
     gameState.phase = 'grabbing';
@@ -364,7 +491,20 @@ function attemptGrab() {
                 gameState.callbacks.onGrab(closestPrize, true);
             }
         } else {
-            // Grip failed
+            // Grip failed - apply bounce physics to the prize
+            applyBouncePhysics(closestPrize, grabX, grabY);
+            
+            // Also bounce nearby prizes for added realism
+            for (const prize of gameState.prizes) {
+                if (prize === closestPrize || prize.grabbed) continue;
+                const dx = prize.x - grabX;
+                const dy = prize.y - grabY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < claw.grabRadius + prize.size) {
+                    applyBouncePhysics(prize, grabX, grabY);
+                }
+            }
+            
             if (gameState.callbacks.onGrab) {
                 gameState.callbacks.onGrab(closestPrize, false);
             }

@@ -556,15 +556,22 @@ function drawPrizes() {
         const glow = RARITY_COLORS[prize.rarity].glow;
         const size = prize.size;
         
+        // Calculate bounce scale for visual feedback
+        const bounceScale = prize.bouncing ? 1.15 : 1;
+        const velocityScale = Math.min(1.2, 1 + (Math.abs(prize.vx || 0) + Math.abs(prize.vy || 0)) * 0.01);
+        const finalScale = bounceScale * velocityScale;
+        
         ctx.save();
         ctx.translate(prize.x, prize.y);
         ctx.rotate(prize.rotation);
+        ctx.scale(finalScale, finalScale);
         
-        // Glow effect (pulsing)
-        if (prize.rarity === 'legendary' || prize.rarity === 'epic') {
-            const pulseSize = size * (1.3 + Math.sin(glowPulse * 2 + prize.id) * 0.1);
+        // Glow effect (pulsing) - enhanced when bouncing
+        if (prize.rarity === 'legendary' || prize.rarity === 'epic' || prize.bouncing) {
+            const baseGlow = prize.bouncing ? 1.5 : 1.3;
+            const pulseSize = size * (baseGlow + Math.sin(glowPulse * 2 + prize.id) * 0.1);
             const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, pulseSize);
-            gradient.addColorStop(0, glow);
+            gradient.addColorStop(0, prize.bouncing ? 'rgba(255, 255, 255, 0.4)' : glow);
             gradient.addColorStop(1, 'transparent');
             ctx.fillStyle = gradient;
             ctx.beginPath();
@@ -578,15 +585,16 @@ function drawPrizes() {
         ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
         ctx.fill();
         
-        // Border
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
+        // Border - brighter when bouncing
+        ctx.strokeStyle = prize.bouncing ? '#fff' : '#ddd';
+        ctx.lineWidth = prize.bouncing ? 3 : 2;
         ctx.stroke();
         
         // Emoji
         ctx.restore();
         ctx.save();
         ctx.translate(prize.x, prize.y);
+        ctx.scale(finalScale, finalScale);
         
         const emojis = PRIZE_EMOJIS[prize.rarity];
         const emoji = emojis[prize.id % emojis.length];
