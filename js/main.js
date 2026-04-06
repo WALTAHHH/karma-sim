@@ -19,7 +19,7 @@ import { checkAchievements } from './achievements.js';
 import { initDebug, updateDebugPanel, registerDebugCallback } from './debug.js';
 import { countries, selectWeightedCountry } from './countries.js';
 import { selectRandomYear, getEraForYear } from './eras.js';
-import { getAvailableJobs, getJobById } from './jobs.js';
+import { getAvailableJobs, getJobById, getContextualJobCategories } from './jobs.js';
 import {
     getUnlockedCountries,
     getLockedCountries,
@@ -739,11 +739,18 @@ function showCareerSelection() {
     state.careerSelected = true;
     state.usedEventIds.add('career_selection');
 
-    // Get unlocked job categories
+    // Get persisted job category unlocks (purchased with karma)
     const unlockedCategories = getUnlockedJobCategories().map(c => c.id);
+    
+    // Get contextual job categories based on birth circumstances
+    // Wealth, education, and era can open additional career paths
+    const contextualCategories = getContextualJobCategories(state.life);
+    
+    // Combine both sources - Set removes duplicates
+    const allCategories = [...new Set([...unlockedCategories, ...contextualCategories])];
 
-    // Get available jobs for this era and life
-    const availableJobs = getAvailableJobs(state.life.era, unlockedCategories, state.life);
+    // Get available jobs for this era and combined categories
+    const availableJobs = getAvailableJobs(state.life.era, allCategories, state.life);
 
     ui.showText('The time has come to find your place in the world.');
 

@@ -1095,3 +1095,53 @@ export function getJobModifiers(jobId) {
 export function getJobsCountByCategory(categoryId) {
     return jobs.filter(j => j.category === categoryId).length;
 }
+
+// Get contextual job categories based on birth circumstances
+// These are "soft unlocks" that don't require karma - your circumstances open doors
+export function getContextualJobCategories(life) {
+    const contextual = [];
+    
+    // High wealth (4-5) opens commerce and services
+    // Wealthy families have connections to business and can afford service careers
+    if (life.wealth >= 4) {
+        contextual.push('commerce', 'services');
+    }
+    
+    // High education (4-5) opens professional and science careers
+    // Education is required to enter learned professions
+    if (life.education >= 4) {
+        contextual.push('professional', 'science');
+    }
+    
+    // Era-based unlocks - modern eras have more diverse job markets
+    if (life.era && life.era.id) {
+        const eraId = life.era.id;
+        
+        // Contemporary era - service economy dominates
+        if (eraId === 'contemporary') {
+            contextual.push('services', 'healthcare');
+        }
+        
+        // Cold War era - growth of services and healthcare
+        if (eraId === 'cold_war') {
+            contextual.push('services');
+        }
+        
+        // Early modern - some service sector growth
+        if (eraId === 'early_modern') {
+            contextual.push('services');
+        }
+        
+        // Pre-industrial and industrial_revolution keep the default
+        // agriculture/labor focus - no additional soft unlocks
+    }
+    
+    // Moderate wealth (3) with connections (3+) opens services
+    // Social connections help even without great wealth
+    if (life.wealth >= 3 && life.connections >= 3) {
+        contextual.push('services');
+    }
+    
+    // Return unique categories
+    return [...new Set(contextual)];
+}
