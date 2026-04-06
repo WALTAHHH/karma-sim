@@ -19,6 +19,31 @@ let screenShake = 0;
 let notifications = [];
 let showUpgradePanel = false;
 
+// CSS animation helpers
+function triggerAnimation(selector, className, duration = 400) {
+    const el = document.querySelector(selector);
+    if (el) {
+        el.classList.add(className);
+        setTimeout(() => el.classList.remove(className), duration);
+    }
+}
+
+function updateEdgeExcitement(game) {
+    const itemsNearEdge = game.items.filter(i => i.edgeTension > 0.3).length;
+    const glass = document.querySelector('.pusher-glass');
+    if (glass) {
+        glass.classList.toggle('edge-excitement', itemsNearEdge >= 3);
+    }
+    
+    // Also check for event active state
+    const cabinet = document.querySelector('.pusher-cabinet');
+    if (cabinet && game.activeEvent) {
+        cabinet.classList.add('event-active');
+    } else if (cabinet) {
+        cabinet.classList.remove('event-active');
+    }
+}
+
 const DROP_COST = 1;
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 320;
@@ -162,6 +187,8 @@ function doDrop(position = dropPosition) {
     const item = game.dropCoin(position);
     
     // Sound and feedback based on what dropped
+    triggerAnimation('.pusher-cabinet', 'drop-impact', 150);
+    
     if (item.type === 'coin') {
         playTick(450 + Math.random() * 100);
         screenShake = 2;
@@ -209,8 +236,10 @@ function doMultiDrop(count) {
     if (isMassive) {
         addNotification('💥 COIN STORM! 💥', '#fbbf24', 2000);
         screenFlash('#fbbf24', 0.15);
+        triggerAnimation('.pusher-cabinet', 'storm', 400);
     } else if (isLarge) {
         addNotification('🌧️ Rain incoming!', '#60a5fa', 1500);
+        triggerAnimation('.pusher-cabinet', 'drop-impact', 150);
     }
     
     // Staggered drops with escalating intensity
@@ -266,6 +295,9 @@ function startGameLoop() {
         // Update event banner
         updateEventBanner();
         
+        // Update edge excitement CSS state
+        updateEdgeExcitement(game);
+        
         // Decay screen shake
         if (screenShake > 0) screenShake *= 0.9;
         
@@ -316,6 +348,9 @@ function handleCollections(items) {
             screenShake = 25;
             addNotification(`🌟 JACKPOT! +${result.value}☯`, '#fbbf24', 3500);
             
+            // CSS celebration animation
+            triggerAnimation('.pusher-machine', 'jackpot', 600);
+            
             // Extra dramatic pause effect
             setTimeout(() => spawnFireworks('#c084fc'), 300);
         } else if (item.type === 'crystal' || item.type === 'trophy') {
@@ -348,6 +383,14 @@ function handleCollections(items) {
             // Extra shake for big combos
             if (result.combo >= 5) {
                 screenShake = Math.max(screenShake, 10);
+                // Add mega class to combo display
+                const comboDisplay = document.getElementById('combo-display');
+                if (comboDisplay) comboDisplay.classList.add('mega');
+            }
+            
+            // Big win animation for high-value collections
+            if (result.value >= 10) {
+                triggerAnimation('.pusher-machine', 'big-win', 400);
             }
         }
         
