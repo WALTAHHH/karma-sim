@@ -14,7 +14,7 @@ import {
     getEventTradeoffInfo
 } from './events/index.js';
 import * as ui from './ui.js';
-import { renderInlineStats, updateInlineStats, hideInlineStats } from './ui.js';
+import { renderInlineStats, updateInlineStats, hideInlineStats, showKarmicIntro } from './ui.js';
 import { checkAchievements } from './achievements.js';
 import { initDebug, updateDebugPanel, registerDebugCallback } from './debug.js';
 import { countries, selectWeightedCountry } from './countries.js';
@@ -215,7 +215,15 @@ function showTitle() {
 
     const karma = getKarma();
     const hasCompletedFirstRun = persistentTracking.totalLives > 0;
-    ui.showTitleScreen(handleBegin, showCollections, runHistory, showGachaScreen, karma, { hasCompletedFirstRun });
+    // Wrap gacha callback with karmic intro
+    const handleGachaWithIntro = (currentKarma) => {
+        showKarmicIntro(
+            currentKarma,
+            () => showGachaScreen(currentKarma),  // On proceed to games
+            showTitle  // On skip, return to title
+        );
+    };
+    ui.showTitleScreen(handleBegin, showCollections, runHistory, handleGachaWithIntro, karma, { hasCompletedFirstRun });
     updatePanels();
 }
 
@@ -958,10 +966,16 @@ function showSummary() {
     // Check if player can continue as descendant
     const hasChildren = state.life.hasChildren;
 
-    // FIRST RUN: Special experience - force Plinko directly
+    // FIRST RUN: Special experience - show karmic intro then Plinko
     if (isFirstRun && karma > 0) {
-        // Show a special first-run message then go directly to Plinko
-        ui.showButton('🎲 Try Your Luck', () => showFirstRunPlinko(karma), false);
+        // Show thematic button that leads to karmic intro
+        ui.showButton('☯ The Wheel of Fate', () => {
+            showKarmicIntro(
+                karma,
+                () => showFirstRunPlinko(karma),  // On proceed to games
+                showTitle  // On skip, return to title
+            );
+        }, false);
         ui.showButton('Begin again', showTitle, true);
     } else {
         // Normal flow for returning players
@@ -970,7 +984,13 @@ function showSummary() {
         }
 
         if (karma > 0) {
-            ui.showButton('🎮 Game Hub', () => showGachaScreen(karma), hasChildren);
+            ui.showButton('☯ The Wheel of Fate', () => {
+                showKarmicIntro(
+                    karma,
+                    () => showGachaScreen(karma),  // On proceed to games
+                    showTitle  // On skip, return to title
+                );
+            }, hasChildren);
             ui.showButton('Spend Karma', showUnlockShop, true);
             ui.showButton('Begin again', showTitle, true);
         } else {

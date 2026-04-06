@@ -28,6 +28,67 @@ import {
     getTagDiscoveryProgress
 } from './tags.js';
 
+// ============================================
+// TRAIT TOOLTIP HELPER
+// ============================================
+
+// Format trait effects for tooltip display
+function formatTraitEffects(tag) {
+    const effects = [];
+    
+    // Stat bonuses
+    if (tag.bonuses) {
+        for (const [stat, value] of Object.entries(tag.bonuses)) {
+            const percent = Math.round(value * 100);
+            const statName = stat.charAt(0).toUpperCase() + stat.slice(1);
+            effects.push(`<span class="bonus">+${percent}% ${statName} gains</span>`);
+        }
+    }
+    
+    // Stat penalties
+    if (tag.penalties) {
+        for (const [stat, value] of Object.entries(tag.penalties)) {
+            const percent = Math.round(value * 100);
+            const statName = stat.charAt(0).toUpperCase() + stat.slice(1);
+            effects.push(`<span class="penalty">-${percent}% ${statName} gains</span>`);
+        }
+    }
+    
+    // Karma modifiers
+    if (tag.karmaBonus) {
+        effects.push(`<span class="special">+${tag.karmaBonus} karma per life</span>`);
+    }
+    if (tag.karmaPenalty) {
+        effects.push(`<span class="penalty">-${tag.karmaPenalty} karma per life</span>`);
+    }
+    
+    // Variance modifiers (risk taker / cautious)
+    if (tag.varianceBonus) {
+        const percent = Math.round(tag.varianceBonus * 100);
+        effects.push(`<span class="special">+${percent}% outcome variance</span>`);
+        effects.push(`<span class="bonus">Higher highs, lower lows</span>`);
+    }
+    if (tag.variancePenalty) {
+        const percent = Math.round(tag.variancePenalty * 100);
+        effects.push(`<span class="special">-${percent}% outcome variance</span>`);
+        effects.push(`<span class="bonus">More stable outcomes</span>`);
+    }
+    
+    return effects.join('<br>');
+}
+
+// Create trait tooltip HTML
+function createTraitTooltipHTML(tag) {
+    const effectsHTML = formatTraitEffects(tag);
+    return `
+        <div class="trait-tooltip">
+            <div class="trait-tooltip-name">${tag.icon} ${tag.name}</div>
+            <div class="trait-tooltip-desc">${tag.flavorText || tag.description}</div>
+            <div class="trait-tooltip-effects">${effectsHTML}</div>
+        </div>
+    `;
+}
+
 function getContentEl() {
     return document.getElementById('content');
 }
@@ -258,7 +319,7 @@ export function showTitleScreen(onBegin, onCollections, runHistory = null, onGac
     if (onGacha && karma > 0 && hasCompletedFirstRun) {
         const gachaBtn = document.createElement('button');
         gachaBtn.className = 'begin-button gacha-title-btn';
-        gachaBtn.innerHTML = '🎮 Game Hub';
+        gachaBtn.innerHTML = '☯ The Wheel of Fate';
         gachaBtn.addEventListener('click', () => onGacha(karma));
         menu.appendChild(gachaBtn);
     }
@@ -799,7 +860,7 @@ export function showSummary(summary) {
             if (tag) {
                 const tagEl = document.createElement('span');
                 tagEl.className = 'summary-trait';
-                tagEl.innerHTML = `${tag.icon} ${tag.name}`;
+                tagEl.innerHTML = `${tag.icon} ${tag.name}${createTraitTooltipHTML(tag)}`;
                 traitsContainer.appendChild(tagEl);
             }
         });
@@ -1548,6 +1609,7 @@ export function updateRightPanel(state = null, tracking = null) {
                     html += `<div class="panel-trait">`;
                     html += `<span class="trait-icon">${tag.icon}</span>`;
                     html += `<span class="trait-name">${tag.name}</span>`;
+                    html += createTraitTooltipHTML(tag);
                     html += `</div>`;
                 }
             }
@@ -1887,6 +1949,31 @@ function renderTraitsGrid(allTags, discoveredIds) {
 
     sortedTags.forEach(tag => {
         const isDiscovered = discoveredIds.has(tag.id);
+        // Build detailed effect description for discovered traits
+        let detailText = tag.description;
+        if (isDiscovered) {
+            const effects = [];
+            if (tag.bonuses) {
+                for (const [stat, value] of Object.entries(tag.bonuses)) {
+                    effects.push(`+${Math.round(value * 100)}% ${stat}`);
+                }
+            }
+            if (tag.penalties) {
+                for (const [stat, value] of Object.entries(tag.penalties)) {
+                    effects.push(`-${Math.round(value * 100)}% ${stat}`);
+                }
+            }
+            if (tag.varianceBonus) {
+                effects.push(`+${Math.round(tag.varianceBonus * 100)}% variance`);
+            }
+            if (tag.variancePenalty) {
+                effects.push(`-${Math.round(tag.variancePenalty * 100)}% variance`);
+            }
+            if (effects.length > 0) {
+                detailText = `${tag.flavorText || tag.description} | ${effects.join(', ')}`;
+            }
+        }
+        
         const thumb = createThumbnail(
             isDiscovered,
             isDiscovered ? tag.icon : '?',
@@ -1894,7 +1981,7 @@ function renderTraitsGrid(allTags, discoveredIds) {
             isDiscovered ? `trait-${tag.category}` : '',
             isDiscovered ? {
                 title: tag.name,
-                detail: tag.description
+                detail: detailText
             } : null
         );
         grid.appendChild(thumb);
@@ -1940,4 +2027,78 @@ function formatIncomeLevel(level) {
         'high': 'High Income'
     };
     return labels[level] || level;
+}
+
+// ============================================
+// KARMIC GOD INTRO MODAL
+// ============================================
+
+// Show the karmic entity intro before the game hub
+export function showKarmicIntro(karma, onProceed, onSkip) {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'karmic-intro-overlay';
+
+    // Create intro content
+    const intro = document.createElement('div');
+    intro.className = 'karmic-intro';
+
+    // Mystical symbol
+    const symbol = document.createElement('div');
+    symbol.className = 'karmic-intro-symbol';
+    symbol.textContent = '☯';
+    intro.appendChild(symbol);
+
+    // Title
+    const title = document.createElement('div');
+    title.className = 'karmic-intro-title';
+    title.textContent = 'THE WHEEL OF FATE';
+    intro.appendChild(title);
+
+    // Intro text from the karmic entity
+    const text = document.createElement('div');
+    text.className = 'karmic-intro-text';
+    text.innerHTML = `
+        <span class="speaker">The Arbiter speaks:</span><br><br>
+        "Mortal, you have lived and died. Your karma echoes across the void.<br><br>
+        I am the keeper of the eternal cycle. Before you begin again, 
+        will you test your fortune at the games of chance?<br><br>
+        Karma won here multiplies. Karma lost... returns to the wheel."
+    `;
+    intro.appendChild(text);
+
+    // Buttons
+    const buttons = document.createElement('div');
+    buttons.className = 'karmic-intro-buttons';
+
+    const proceedBtn = document.createElement('button');
+    proceedBtn.className = 'karmic-intro-btn';
+    proceedBtn.textContent = '🎲 Enter the Games';
+    proceedBtn.addEventListener('click', () => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            overlay.remove();
+            onProceed();
+        }, 800);
+    });
+    buttons.appendChild(proceedBtn);
+
+    const skipBtn = document.createElement('button');
+    skipBtn.className = 'karmic-intro-btn secondary';
+    skipBtn.textContent = 'Return to the cycle';
+    skipBtn.addEventListener('click', () => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            overlay.remove();
+            onSkip();
+        }, 800);
+    });
+    buttons.appendChild(skipBtn);
+
+    intro.appendChild(buttons);
+    overlay.appendChild(intro);
+    document.body.appendChild(overlay);
+
+    // Focus the proceed button
+    setTimeout(() => proceedBtn.focus(), 500);
 }

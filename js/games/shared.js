@@ -216,9 +216,26 @@ export function playScratchSound() {
  * @param {string} color - CSS color for particles
  * @param {number} count - Number of particles
  * @param {HTMLElement} [container=null] - Container element (defaults to #particles or creates one)
+ * @param {Object} [position=null] - Optional spawn position {x: percent, y: percent} or {px: {x, y}} for pixel coords
  */
-export function spawnParticles(color, count, container = null) {
+export function spawnParticles(color, count, container = null, position = null) {
     const targetContainer = container || document.getElementById('particles') || createParticleContainer();
+    
+    // Determine spawn position
+    let leftPos = '50%';
+    let topPos = '50%';
+    
+    if (position) {
+        if (position.px) {
+            // Pixel coordinates relative to container
+            leftPos = `${position.px.x}px`;
+            topPos = `${position.px.y}px`;
+        } else {
+            // Percentage coordinates
+            leftPos = `${position.x || 50}%`;
+            topPos = `${position.y || 50}%`;
+        }
+    }
     
     for (let i = 0; i < count; i++) {
         const particle = document.createElement('div');
@@ -230,8 +247,8 @@ export function spawnParticles(color, count, container = null) {
         const dy = Math.sin(angle) * velocity - 50; // Bias upward
         
         particle.style.cssText = `
-            left: 50%;
-            top: 50%;
+            left: ${leftPos};
+            top: ${topPos};
             background: ${color};
             box-shadow: 0 0 6px ${color}, 0 0 12px ${color};
             --dx: ${dx}px;

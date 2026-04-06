@@ -48,6 +48,12 @@ let backgroundPhase = 0;
 let dropPreviewPhase = 0;
 let anticipationLevel = 0;  // Builds as ball approaches bottom
 
+// Drop position state (0.0 = left edge, 1.0 = right edge)
+let dropPosition = 0.5; // Start at center
+const DROP_INCREMENT = 0.08; // How much to move per arrow press
+const DROP_MIN = 0.15; // Left boundary
+const DROP_MAX = 0.85; // Right boundary
+
 // Audio state
 let lastPegPitch = 300;
 let hitStreakAudio = 0;
@@ -117,9 +123,9 @@ export function showPlinkoGame(karma, spendKarmaFn, addKarmaFn, onClose) {
             <div class="plinko-board-container" id="plinko-board-container">
                 <canvas id="plinko-canvas" width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}"></canvas>
                 <div class="drop-zone">
-                    <button class="drop-btn" data-pos="left" title="Left Drop">◀</button>
-                    <button class="drop-btn center" data-pos="center" title="Center Drop">▼</button>
-                    <button class="drop-btn" data-pos="right" title="Right Drop">▶</button>
+                    <button class="drop-arrow-btn" id="drop-left" title="Move Left (← Arrow Key)">◀</button>
+                    <button class="drop-btn center" id="drop-ball" title="Drop Ball (Space/Enter)">▼ DROP</button>
+                    <button class="drop-arrow-btn" id="drop-right" title="Move Right (→ Arrow Key)">▶</button>
                 </div>
             </div>
             
@@ -177,24 +183,64 @@ export function showPlinkoGame(karma, spendKarmaFn, addKarmaFn, onClose) {
 }
 
 function bindEvents(onClose) {
-    // Drop position buttons
-    document.querySelectorAll('.drop-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!isDropping && currentKarma >= getPlinkoCost()) {
-                const pos = btn.dataset.pos;
-                const positions = getDropPositions(CANVAS_WIDTH);
-                handleDrop(positions[pos]);
-            }
-        });
+    // Move drop position left
+    document.getElementById('drop-left').addEventListener('click', () => {
+        if (!isDropping) {
+            moveDropPosition(-DROP_INCREMENT);
+        }
+    });
+    
+    // Move drop position right
+    document.getElementById('drop-right').addEventListener('click', () => {
+        if (!isDropping) {
+            moveDropPosition(DROP_INCREMENT);
+        }
+    });
+    
+    // Drop ball at current position
+    document.getElementById('drop-ball').addEventListener('click', () => {
+        if (!isDropping && currentKarma >= getPlinkoCost()) {
+            const dropX = getDropX();
+            handleDrop(dropX);
+        }
     });
     
     // Random drop
     document.getElementById('plinko-random').addEventListener('click', () => {
         if (!isDropping && currentKarma >= getPlinkoCost()) {
-            const positions = getDropPositions(CANVAS_WIDTH);
-            handleDrop(positions.random);
+            // Random position within bounds
+            dropPosition = DROP_MIN + Math.random() * (DROP_MAX - DROP_MIN);
+            const dropX = getDropX();
+            handleDrop(dropX);
         }
     });
+    
+    // Keyboard controls
+    const keyHandler = (e) => {
+        if (!plinkoContainer) return;
+        
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            if (!isDropping) {
+                moveDropPosition(-DROP_INCREMENT);
+                e.preventDefault();
+            }
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            if (!isDropping) {
+                moveDropPosition(DROP_INCREMENT);
+                e.preventDefault();
+            }
+        } else if (e.key === ' ' || e.key === 'Enter') {
+            if (!isDropping && currentKarma >= getPlinkoCost()) {
+                const dropX = getDropX();
+                handleDrop(dropX);
+                e.preventDefault();
+            }
+        }
+    };
+    document.addEventListener('keydown', keyHandler);
+    
+    // Store handler for cleanup
+    plinkoContainer._keyHandler = keyHandler;
     
     // Close
     document.getElementById('plinko-close').addEventListener('click', () => {
@@ -209,6 +255,18 @@ function bindEvents(onClose) {
             handleDebugDrop(targetMult);
         });
     });
+}
+
+// Move the drop position with bounds checking
+function moveDropPosition(delta) {
+    dropPosition = Math.max(DROP_MIN, Math.min(DROP_MAX, dropPosition + delta));
+    playTick(400 + dropPosition * 200); // Audio feedback
+}
+
+// Convert dropPosition (0-1) to canvas X coordinate
+function getDropX() {
+    const padding = 40; // Stay away from edges
+    return padding + dropPosition * (CANVAS_WIDTH - padding * 2);
 }
 
 /**
@@ -368,14 +426,18 @@ async function handleDrop(dropX) {
                 screenFlash('#ffd700', 0.2);
                 screenShake.intensity = 8;
                 const particles = document.getElementById('plinko-particles');
-                spawnParticles('#ffd700', 15, particles);
+                // Spawn particles at the peg location
+                const pegPos = { px: { x: peg.x, y: peg.y } };
+                spawnParticles('#ffd700', 15, particles, pegPos);
                 showNotification('✨ LUCKY PEG! ✨', '#ffd700');
             }
             
             // Spawn mini particles on hits with streak
             if (data.hitStreak >= 3) {
                 const particles = document.getElementById('plinko-particles');
-                spawnParticles(COLORS.pegHit, Math.min(data.hitStreak, 5), particles);
+                // Spawn particles at the peg location
+                const pegPos = { px: { x: peg.x, y: peg.y } };
+                spawnParticles(COLORS.pegHit, Math.min(data.hitStreak, 5), particles, pegPos);
             }
         },
         onSlotLand: async (slot, result) => {
@@ -888,39 +950,92 @@ function drawBallTrail(trail, ball) {
     ctx.restore();
 }
 
-// Enhanced drop preview
+// Enhanced drop preview - shows current drop position
 function drawDropPreview() {
-    const positions = getDropPositions(CANVAS_WIDTH);
-    const centerX = positions.center;
-    const spread = positions.right - positions.center;
+    const dropX = getDropX();
     
     // Animated preview ball
-    const pulse = Math.sin(dropPreviewPhase) * 0.1 + 0.9;
-    const bob = Math.sin(dropPreviewPhase * 0.7) * 3;
+    const pulse = Math.sin(dropPreviewPhase) * 0.15 + 0.85;
+    const bob = Math.sin(dropPreviewPhase * 0.7) * 4;
     
-    // Drop zone indicator
+    // Drop zone background (full width)
+    const padding = 40;
     ctx.save();
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillRect(centerX - spread - 10, 5, spread * 2 + 20, 30);
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#444466';
+    ctx.fillRect(padding, 2, CANVAS_WIDTH - padding * 2, 35);
     ctx.restore();
     
-    // Animated arrow pointing down
+    // Position indicator track
     ctx.save();
-    ctx.globalAlpha = 0.4 + pulse * 0.3;
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padding, 25);
+    ctx.lineTo(CANVAS_WIDTH - padding, 25);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Drop position marker (glowing ball preview)
+    ctx.save();
+    
+    // Outer glow
+    const glowGrad = ctx.createRadialGradient(dropX, 25, 0, dropX, 25, 20 * pulse);
+    glowGrad.addColorStop(0, 'rgba(255, 107, 107, 0.6)');
+    glowGrad.addColorStop(0.5, 'rgba(255, 107, 107, 0.2)');
+    glowGrad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(dropX, 25, 20 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = glowGrad;
+    ctx.fill();
+    
+    // Ball preview
+    const ballGrad = ctx.createRadialGradient(dropX - 2, 23, 0, dropX, 25, 10);
+    ballGrad.addColorStop(0, '#ff8888');
+    ballGrad.addColorStop(0.6, '#ff6b6b');
+    ballGrad.addColorStop(1, '#cc4444');
+    ctx.beginPath();
+    ctx.arc(dropX, 25, 8 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = ballGrad;
+    ctx.fill();
+    
+    // Shine
+    ctx.beginPath();
+    ctx.arc(dropX - 3, 22, 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+    
+    ctx.restore();
+    
+    // Animated arrow pointing down from the ball
+    ctx.save();
+    ctx.globalAlpha = 0.5 + pulse * 0.3;
     ctx.fillStyle = '#fbbf24';
-    ctx.font = '20px sans-serif';
+    ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('▼', centerX, 50 + bob);
+    ctx.fillText('▼', dropX, 50 + bob);
     ctx.restore();
     
-    // "Click to drop" hint
+    // Left/right arrow hints at edges
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#888';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('◀', padding + 5, 28);
+    ctx.textAlign = 'right';
+    ctx.fillText('▶', CANVAS_WIDTH - padding - 5, 28);
+    ctx.restore();
+    
+    // "Use ← → to aim" hint
     ctx.save();
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#888';
-    ctx.font = '10px sans-serif';
+    ctx.font = '9px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('CLICK TO DROP', centerX, 20);
+    ctx.fillText('← → to aim, SPACE to drop', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 55);
     ctx.restore();
 }
 
@@ -1289,15 +1404,33 @@ function updateKarmaLocal(newValue, delta = 0) {
 
 function updateButtonStates() {
     const canPlay = currentKarma >= getPlinkoCost() && !isDropping;
+    const canMove = !isDropping;
     
-    document.querySelectorAll('.drop-btn').forEach(btn => {
-        btn.disabled = !canPlay;
-        btn.classList.toggle('disabled', !canPlay);
-    });
+    // Drop button
+    const dropBtn = document.getElementById('drop-ball');
+    if (dropBtn) {
+        dropBtn.disabled = !canPlay;
+        dropBtn.classList.toggle('disabled', !canPlay);
+    }
     
+    // Arrow buttons (can move even if can't afford to play)
+    const leftBtn = document.getElementById('drop-left');
+    const rightBtn = document.getElementById('drop-right');
+    if (leftBtn) {
+        leftBtn.disabled = !canMove;
+        leftBtn.classList.toggle('disabled', !canMove);
+    }
+    if (rightBtn) {
+        rightBtn.disabled = !canMove;
+        rightBtn.classList.toggle('disabled', !canMove);
+    }
+    
+    // Random button
     const randomBtn = document.getElementById('plinko-random');
-    randomBtn.disabled = !canPlay;
-    randomBtn.classList.toggle('disabled', !canPlay);
+    if (randomBtn) {
+        randomBtn.disabled = !canPlay;
+        randomBtn.classList.toggle('disabled', !canPlay);
+    }
 }
 
 export function hidePlinkoGame() {
@@ -1308,6 +1441,11 @@ export function hidePlinkoGame() {
         animationId = null;
     }
     
+    // Clean up keyboard handler
+    if (plinkoContainer && plinkoContainer._keyHandler) {
+        document.removeEventListener('keydown', plinkoContainer._keyHandler);
+    }
+    
     if (plinkoContainer) {
         plinkoContainer.remove();
         plinkoContainer = null;
@@ -1315,4 +1453,7 @@ export function hidePlinkoGame() {
     
     canvas = null;
     ctx = null;
+    
+    // Reset drop position for next game
+    dropPosition = 0.5;
 }

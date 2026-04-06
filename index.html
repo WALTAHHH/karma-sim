@@ -484,6 +484,200 @@
             color: #c9a0dc;
             font-size: 14px;
             border-radius: 4px;
+            position: relative;
+            cursor: help;
+        }
+
+        /* Trait tooltips */
+        .trait-tooltip {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            border: 1px solid #c9a0dc;
+            padding: 12px 15px;
+            min-width: 220px;
+            max-width: 280px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            text-align: left;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .trait-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #c9a0dc;
+        }
+
+        .summary-trait:hover .trait-tooltip,
+        .panel-trait:hover .trait-tooltip {
+            opacity: 1;
+        }
+
+        .trait-tooltip-name {
+            color: #c9a0dc;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .trait-tooltip-desc {
+            color: #aaa;
+            font-size: 12px;
+            font-style: italic;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .trait-tooltip-effects {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .trait-tooltip-effects .bonus {
+            color: #5a5;
+        }
+
+        .trait-tooltip-effects .penalty {
+            color: #a55;
+        }
+
+        .trait-tooltip-effects .special {
+            color: #5aa;
+        }
+
+        /* Panel trait tooltip positioning */
+        .panel-trait {
+            position: relative;
+            cursor: help;
+        }
+
+        .panel-trait .trait-tooltip {
+            left: 0;
+            transform: translateX(0);
+            bottom: calc(100% + 5px);
+        }
+
+        .panel-trait .trait-tooltip::after {
+            left: 20px;
+        }
+
+        /* Karmic God Intro Modal */
+        .karmic-intro-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.97);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            animation: karmicFadeIn 1s ease;
+        }
+
+        @keyframes karmicFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .karmic-intro-overlay.fade-out {
+            animation: karmicFadeOut 0.8s ease forwards;
+        }
+
+        @keyframes karmicFadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .karmic-intro {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+            animation: karmicReveal 1.2s ease;
+        }
+
+        @keyframes karmicReveal {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .karmic-intro-symbol {
+            font-size: 72px;
+            margin-bottom: 20px;
+            animation: karmicPulse 3s ease-in-out infinite;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        @keyframes karmicPulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.3); transform: scale(1); }
+            50% { text-shadow: 0 0 40px rgba(255, 215, 0, 0.6); transform: scale(1.05); }
+        }
+
+        .karmic-intro-title {
+            color: #ffd700;
+            font-size: 28px;
+            letter-spacing: 4px;
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .karmic-intro-text {
+            color: #b0b0b0;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .karmic-intro-text .speaker {
+            color: #ffd700;
+            font-style: normal;
+        }
+
+        .karmic-intro-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .karmic-intro-btn {
+            background: transparent;
+            border: 1px solid #ffd700;
+            color: #ffd700;
+            font-family: inherit;
+            font-size: 16px;
+            padding: 14px 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .karmic-intro-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .karmic-intro-btn.secondary {
+            border-color: #555;
+            color: #888;
+            font-size: 14px;
+            padding: 10px 30px;
+        }
+
+        .karmic-intro-btn.secondary:hover {
+            border-color: #777;
+            color: #aaa;
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: none;
         }
 
         .begin-button {
