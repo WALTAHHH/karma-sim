@@ -6,12 +6,16 @@ const MIN_KARMA = -100;
 const MAX_KARMA = 100;
 
 export function getKarma() {
-    const stored = localStorage.getItem(KARMA_KEY);
-    return stored ? parseInt(stored, 10) : 0;
+    const stored = parseInt(localStorage.getItem(KARMA_KEY), 10);
+    // A missing or corrupted value reads as 0 instead of spreading NaN
+    return Number.isFinite(stored) ? stored : 0;
 }
 
+// Returns the stored balance. Karma is kept as a whole number (fractions are
+// dropped, as the stored value was always read back with parseInt).
 export function setKarma(value) {
-    const clamped = Math.max(MIN_KARMA, Math.min(MAX_KARMA, value));
+    const whole = Number.isFinite(value) ? Math.trunc(value) : 0;
+    const clamped = Math.max(MIN_KARMA, Math.min(MAX_KARMA, whole));
     localStorage.setItem(KARMA_KEY, clamped.toString());
     return clamped;
 }
@@ -24,6 +28,8 @@ export function resetKarma() {
     localStorage.removeItem(KARMA_KEY);
 }
 
+// Returns the new balance, or false if there isn't enough karma.
+// The balance can legitimately be 0, so callers must check `=== false`.
 export function spendKarma(amount) {
     const current = getKarma();
     if (current >= amount) {

@@ -212,8 +212,10 @@ function handleBuyCard() {
     if (currentKarma < SCRATCH_COST || (currentCard && !cardComplete)) return;
     
     // Spend karma
-    currentKarma -= SCRATCH_COST;
-    spendFn(SCRATCH_COST);
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(SCRATCH_COST);
+    if (spent === false) { return; }
+    currentKarma = spent;
     updateKarmaLocal(currentKarma, -SCRATCH_COST);
     
     // Generate new card
@@ -695,8 +697,7 @@ async function showResult(wins, reward) {
         
         // Add karma
         await sleep(500);
-        currentKarma += total;
-        addFn(total);
+        currentKarma = addFn(total);
         updateKarmaLocal(currentKarma, total);
     }
     

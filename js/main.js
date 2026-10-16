@@ -13,6 +13,7 @@ import {
     applyHiddenCost,
     getEventTradeoffInfo
 } from './events/index.js';
+import { withArticle } from './data.js';
 import * as ui from './ui.js';
 import { renderInlineStats, updateInlineStats, hideInlineStats, renderBirthStats, hideBirthStats, showKarmicIntro } from './ui.js';
 import { checkAchievements } from './achievements.js';
@@ -336,6 +337,9 @@ function startLife() {
     };
 
     const description = getStartDescription(state.life);
+    // Keep the birth text as shown; the summary must not regenerate it from end-of-life stats
+    state.birthDescription = description;
+    state.lifeSummary = null;
     ui.clear();
     
     // Show inline stats from birth so players see their starting conditions
@@ -359,6 +363,13 @@ function nextEvent() {
 
     // Check if we've reached max events
     if (state.eventCount >= state.maxEvents) {
+        // An immediate consequence of the final choice still lands before death
+        const dueNow = state.pendingHiddenCosts.filter(c => c.trigger === 'immediate');
+        if (dueNow.length > 0) {
+            state.pendingHiddenCosts = state.pendingHiddenCosts.filter(c => c.trigger !== 'immediate');
+            revealHiddenCosts(dueNow, () => triggerDeath());
+            return;
+        }
         triggerDeath();
         return;
     }
@@ -399,10 +410,22 @@ function continueToNextEvent() {
             state.stageMaxEvents = getStageEventCount(state.currentStage);
             state.stageEventCount = 0;
 
-            // Check for stage-triggered hidden costs
+            // Check for children when entering middle stage.
+            // Done before any hidden-cost reveal, which would otherwise skip this check.
+            if (state.currentStage === 'middle' && state.life.hasChildren === undefined) {
+                state.life.hasChildren = checkForChildren(state.life);
+                if (state.life.hasChildren) {
+                    state.life.lineage.hasChildren = true;
+                    // Calculate approximate child birth year
+                    state.life.lineage.childBirthYear = state.life.year + 25 + Math.floor(Math.random() * 10);
+                }
+            }
+
+            // Check for stage-triggered hidden costs (delayed costs already counted down for this event)
             const { toReveal: stageReveal, remaining: stageRemaining } = processPendingHiddenCosts(
                 state.pendingHiddenCosts,
-                state.currentStage
+                state.currentStage,
+                false
             );
             state.pendingHiddenCosts = stageRemaining;
 
@@ -422,16 +445,6 @@ function continueToNextEvent() {
             if (state.currentStage === 'young_adult' && !state.careerSelected) {
                 showCareerSelection();
                 return;
-            }
-
-            // Check for children when entering middle stage
-            if (state.currentStage === 'middle' && state.life.hasChildren === undefined) {
-                state.life.hasChildren = checkForChildren(state.life);
-                if (state.life.hasChildren) {
-                    state.life.lineage.hasChildren = true;
-                    // Calculate approximate child birth year
-                    state.life.lineage.childBirthYear = state.life.year + 25 + Math.floor(Math.random() * 10);
-                }
             }
         } else {
             triggerDeath();
@@ -661,15 +674,10 @@ function resolveEvent(optionIndex) {
         rememberChoice(event.id, option.text, state.currentStage, tags);
     }
 
-    // Queue hidden cost if present
+    // Queue hidden cost if present. Immediate costs are revealed at the next check,
+    // right after this outcome; delayed and next_stage costs wait for their trigger.
     if (result.hiddenCost) {
-        if (result.hiddenCost.trigger === 'immediate') {
-            // Immediate hidden costs are revealed right after the outcome
-            state.pendingHiddenCosts.push(result.hiddenCost);
-        } else {
-            // Delayed or next_stage costs are queued
-            state.pendingHiddenCosts.push(result.hiddenCost);
-        }
+        state.pendingHiddenCosts.push(result.hiddenCost);
     }
 
     // Adjust karma
@@ -841,8 +849,8 @@ function showCareerSelection() {
                 const selectedJob = options[index];
                 state.life = applyJob(state.life, selectedJob.id);
 
-                state.moments.push(`Became a ${selectedJob.name}.`);
-                ui.showText(`You begin your career as a ${selectedJob.name}. ${selectedJob.description}`);
+                state.moments.push(`Became ${withArticle(selectedJob.name)}.`);
+                ui.showText(`You begin your career as ${withArticle(selectedJob.name)}. ${selectedJob.description}`);
                 ui.showButton('Continue', nextEvent);
                 updateDebugPanel(state);
                 updatePanels();
@@ -907,13 +915,10 @@ function triggerDeath(reason) {
     completeTutorial();
 }
 
-// Show end-of-life summary
-function showSummary() {
-    state.phase = 'summary';
-    
-    // Hide inline stats on summary screen
-    hideInlineStats();
-    hideBirthStats();
+// Record the end of the current life exactly once: life count, achievements, run history.
+// Returns the summary data, which is reused if the summary screen is shown again.
+function recordLifeEnd() {
+    if (state.lifeSummary) return state.lifeSummary;
 
     // Check if this is the first run BEFORE incrementing
     const isFirstRun = persistentTracking.totalLives === 0;
@@ -935,25 +940,28 @@ function showSummary() {
     // Check achievements
     const newlyUnlocked = checkAchievements(achievementData);
     
+    const startDescription = state.birthDescription || getStartDescription(state.life);
+    const endDescription = getEndDescription(state.life);
+
     // Save run history
     const runEntry = {
-        startDescription: getStartDescription(state.life),
+        startDescription,
         moments: state.moments,
-        endDescription: getEndDescription(state.life),
+        endDescription,
         karmaBefore: state.karmaBefore,
         karmaAfter: getKarma(),
         karmaChange: getKarma() - state.karmaBefore,
         achievements: newlyUnlocked.map(a => a.id)
     };
     persistentTracking.runHistory.push(runEntry);
-    
+
     // Save persistent tracking (regions and events already updated during gameplay)
     saveTrackingData(persistentTracking);
 
-    const summary = {
-        startDescription: getStartDescription(state.life),
+    state.lifeSummary = {
+        startDescription,
         moments: state.moments,
-        endDescription: getEndDescription(state.life),
+        endDescription,
         karmaBefore: state.karmaBefore,
         karmaAfter: getKarma(),
         achievements: newlyUnlocked,
@@ -961,6 +969,27 @@ function showSummary() {
         tags: state.life.tags || [],  // Character traits earned this life
         isFirstRun: isFirstRun  // Flag for first run celebration
     };
+    return state.lifeSummary;
+}
+
+// Show end-of-life summary. Safe to call again (e.g. returning from the Game Hub):
+// the life is only recorded once.
+function showSummary() {
+    if (!state.life) {
+        showTitle();
+        return;
+    }
+
+    state.phase = 'summary';
+
+    // Hide inline stats on summary screen
+    hideInlineStats();
+    hideBirthStats();
+
+    const recorded = recordLifeEnd();
+    const isFirstRun = recorded.isFirstRun;
+    // Karma may have changed since the life ended (games, shop)
+    const summary = { ...recorded, karmaAfter: getKarma() };
 
     ui.showSummary(summary);
 
@@ -991,7 +1020,7 @@ function showSummary() {
             ui.showButton('☯ The Wheel of Fate', () => {
                 showKarmicIntro(
                     karma,
-                    () => showGachaScreen(karma),  // On proceed to games
+                    () => showGachaScreen(karma, showSummary),  // On proceed to games; Back returns here
                     showTitle  // On skip, return to title
                 );
             }, hasChildren);
@@ -1053,8 +1082,9 @@ function startAsDescendant(parentLife) {
     startLife();
 }
 
-// Show game hub screen
-function showGachaScreen(currentKarma) {
+// Show game hub screen. `returnTo` is where "Back" leads; it defaults to the title,
+// since the hub can be opened from the title or first-run screens with no life to summarize.
+function showGachaScreen(currentKarma, returnTo = showTitle) {
     showGameHub(
         currentKarma,
         (amount) => spendKarma(amount),  // Spend karma function
@@ -1065,10 +1095,7 @@ function showGachaScreen(currentKarma) {
             }
             return adjustKarma(amount);  // Add karma function (for rewards)
         },
-        () => {
-            // On close, refresh the summary screen
-            showSummary();
-        }
+        () => returnTo()
     );
 }
 

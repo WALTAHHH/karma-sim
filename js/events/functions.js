@@ -371,12 +371,20 @@ export function applyHiddenCost(life, hiddenCost) {
     return newLife;
 }
 
-// Process pending hidden costs and return those that should be revealed
-export function processPendingHiddenCosts(pendingCosts, currentStage) {
+// Process pending hidden costs and return those that should be revealed.
+// Call with countDelayed = true once per event; extra checks (e.g. on a stage change)
+// pass false so delayed costs don't count down twice.
+export function processPendingHiddenCosts(pendingCosts, currentStage, countDelayed = true) {
     const toReveal = [];
     const remaining = [];
 
     for (const cost of pendingCosts) {
+        // Immediate costs are revealed at the first check after the outcome
+        if (cost.trigger === 'immediate') {
+            toReveal.push(cost);
+            continue;
+        }
+
         // Check stage-based triggers
         if (cost.trigger === 'next_stage' && cost.targetStage === currentStage) {
             toReveal.push(cost);
@@ -384,7 +392,7 @@ export function processPendingHiddenCosts(pendingCosts, currentStage) {
         }
 
         // Check and decrement delayed triggers
-        if (cost.trigger === 'delayed') {
+        if (cost.trigger === 'delayed' && countDelayed) {
             cost.eventsRemaining--;
             if (cost.eventsRemaining <= 0) {
                 toReveal.push(cost);

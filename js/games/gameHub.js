@@ -11,7 +11,7 @@ import { showPlinkoGame, hidePlinkoGame } from './plinkoUI.js';
 import { showClawGame, hideClawGame } from './clawUI.js';
 import { showScratchGame, hideScratchGame } from './scratchUI.js';
 import { showPusherGame, hidePusherGame } from './pusherUI.js';
-import { getTotalKarmaEarned } from '../karma.js';
+import { getKarma, getTotalKarmaEarned } from '../karma.js';
 
 /** @type {HTMLElement|null} */
 let hubContainer = null;
@@ -280,7 +280,8 @@ function showGameUnlockCelebration(game, onComplete) {
 export function showGameHub(karma, spendFn, addFn, onClose) {
     hideGameHub(); // Clean up any existing
     
-    currentKarma = karma;
+    // Read the stored balance rather than trusting the caller's snapshot
+    currentKarma = getKarma();
     spendKarmaFn = spendFn;
     addKarmaFn = addFn;
     onHubClose = onClose;
@@ -420,19 +421,18 @@ function createGameCard(game, karma) {
 }
 
 /**
- * Create karma callback wrapper that tracks current karma
+ * Create karma callback wrapper that keeps the hub in sync with the stored balance
  * @param {boolean} isSpend - Whether this is a spend (true) or add (false) callback
- * @returns {Function} Wrapped callback
+ * @returns {Function} Wrapped callback: returns the stored balance after the change,
+ *   or false when a spend is refused (not enough karma)
  */
 function createKarmaCallback(isSpend) {
     return (amount) => {
-        if (isSpend) {
-            spendKarmaFn(amount);
-            currentKarma -= amount;
-        } else {
-            addKarmaFn(amount);
-            currentKarma += amount;
-        }
+        const result = isSpend ? spendKarmaFn(amount) : addKarmaFn(amount);
+        // The stored balance is the single source of truth (it is clamped there)
+        currentKarma = getKarma();
+        if (isSpend && result === false) return false;
+        return currentKarma;
     };
 }
 

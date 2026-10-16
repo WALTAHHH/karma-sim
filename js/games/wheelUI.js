@@ -230,8 +230,10 @@ async function handleSpin() {
     updateButtonState();
     
     // Deduct karma immediately
-    currentKarma -= SPIN_COST;
-    spendFn(SPIN_COST);
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(SPIN_COST);
+    if (spent === false) { isSpinning = false; updateButtonState(); return; }
+    currentKarma = spent;
     updateKarmaLocal(currentKarma, -SPIN_COST);
     
     // Clear any previous result
@@ -459,8 +461,7 @@ async function showResult(wedge) {
         
         // Add karma
         await sleep(500);
-        currentKarma += wedge.value;
-        addFn(wedge.value);
+        currentKarma = addFn(wedge.value);
         updateKarmaLocal(currentKarma, wedge.value);
         
     } else {
@@ -486,8 +487,7 @@ async function showResult(wedge) {
         
         // Add karma
         await sleep(300);
-        currentKarma += wedge.value;
-        addFn(wedge.value);
+        currentKarma = addFn(wedge.value);
         updateKarmaLocal(currentKarma, wedge.value);
     }
     

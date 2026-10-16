@@ -180,8 +180,10 @@ function bindEvents() {
 function doDrop(position = dropPosition) {
     const game = getPusherGame();
     
-    currentKarma -= DROP_COST;
-    spendFn(DROP_COST);
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(DROP_COST);
+    if (spent === false) { return; }
+    currentKarma = spent;
     updateKarmaDisplay();
     
     const item = game.dropCoin(position);
@@ -224,8 +226,10 @@ function doMultiDrop(count) {
     const game = getPusherGame();
     const cost = DROP_COST * count;
     
-    currentKarma -= cost;
-    spendFn(cost);
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(cost);
+    if (spent === false) { return; }
+    currentKarma = spent;
     updateKarmaDisplay();
     
     // Dramatic multi-drop effect
@@ -407,8 +411,7 @@ function handleCollections(items) {
     }
     
     if (totalKarma > 0) {
-        currentKarma += totalKarma;
-        addFn(totalKarma);
+        currentKarma = addFn(totalKarma);
         updateKarmaDisplay(totalKarma);
         
         // Show total for multi-drops
@@ -851,8 +854,10 @@ function updateUpgradePanel() {
             const cost = parseInt(btn.dataset.cost);
             
             if (currentKarma >= cost) {
-                currentKarma -= cost;
-                spendFn(cost);
+                // Spend through the shared karma store; stop if it refuses
+                const spent = spendFn(cost);
+                if (spent === false) { return; }
+                currentKarma = spent;
                 game.applyUpgrade(type);
                 updateKarmaDisplay();
                 updateUpgradePanel();

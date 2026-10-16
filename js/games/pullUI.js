@@ -254,8 +254,10 @@ async function handlePull() {
     updateButtonStates();
     
     // Deduct karma
-    currentKarma -= getPullCost();
-    spendFn(getPullCost());
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(getPullCost());
+    if (spent === false) { isAnimating = false; updateButtonStates(); return; }
+    currentKarma = spent;
     updateKarmaDisplayLocal(currentKarma, -getPullCost());
     
     // Determine result
@@ -266,8 +268,7 @@ async function handlePull() {
     // Apply karma gain if any
     const karmaGain = result.reward.type === 'karma' ? result.reward.value : 0;
     if (karmaGain > 0) {
-        currentKarma += karmaGain;
-        addFn(karmaGain);
+        currentKarma = addFn(karmaGain);
         updateKarmaDisplayLocal(currentKarma, karmaGain);
     }
     

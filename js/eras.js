@@ -24,9 +24,10 @@ export const eras = [
         worldMood: 'an age of empires and agricultural life',
         technologies: ['horse-drawn carriages', 'sailing ships', 'oil lamps', 'handloom weaving'],
         socialMovements: ['abolitionism', 'early workers\' movements', 'Romanticism'],
+        // Context lines are plain strings (any year in the era) or { text, from, to } for a year range
         historicalContext: [
-            'Napoleonic wars reshape Europe',
-            'the Americas fight for independence',
+            { text: 'Napoleonic wars reshape Europe', from: 1800, to: 1815 },
+            { text: 'the Americas fight for independence', from: 1800, to: 1830 },
             'empires expand across the globe',
             'revolution stirs in the hearts of the oppressed'
         ]
@@ -71,10 +72,11 @@ export const eras = [
         technologies: ['automobiles', 'airplanes', 'radio', 'electricity', 'telephones'],
         socialMovements: ['women\'s suffrage', 'labor rights', 'communism', 'fascism'],
         historicalContext: [
-            'the Great War shatters a generation',
-            'empires collapse and nations are born',
-            'the Great Depression grips the world',
-            'another world war engulfs humanity'
+            { text: 'a new century dawns with both confidence and unease', from: 1900, to: 1913 },
+            { text: 'the Great War shatters a generation', from: 1914, to: 1920 },
+            { text: 'empires collapse and nations are born', from: 1917, to: 1925 },
+            { text: 'the Great Depression grips the world', from: 1929, to: 1939 },
+            { text: 'another world war engulfs humanity', from: 1939, to: 1945 }
         ]
     },
     {
@@ -94,9 +96,9 @@ export const eras = [
         technologies: ['television', 'jet aircraft', 'computers', 'space travel', 'nuclear power'],
         socialMovements: ['civil rights', 'decolonization', 'environmentalism', 'counterculture'],
         historicalContext: [
-            'the world divides into two blocs',
-            'humanity reaches for the stars',
-            'colonies break free and nations emerge',
+            { text: 'the world divides into two blocs', from: 1947 },
+            { text: 'humanity reaches for the stars', from: 1957, to: 1975 },
+            { text: 'colonies break free and nations emerge', from: 1946, to: 1975 },
             'the shadow of the bomb looms over all'
         ]
     },
@@ -117,20 +119,26 @@ export const eras = [
         technologies: ['the internet', 'smartphones', 'social media', 'renewable energy', 'AI'],
         socialMovements: ['globalization', 'climate activism', 'digital rights', 'identity politics'],
         historicalContext: [
-            'the Cold War ends and borders shift',
-            'the internet connects the world',
-            'climate change becomes undeniable',
-            'a pandemic reshapes daily life'
+            { text: 'the Cold War ends and borders shift', from: 1989, to: 1994 },
+            { text: 'the internet connects the world', from: 1995 },
+            { text: 'climate change becomes undeniable', from: 2005 },
+            { text: 'a pandemic reshapes daily life', from: 2020, to: 2022 }
         ]
     }
 ];
 
-// Get a random historical context for an era
-export function getRandomHistoricalContext(era) {
-    if (!era.historicalContext || era.historicalContext.length === 0) {
+// Get a random historical context for an era that fits the given year.
+// Lines with a year range only apply inside it; without a year, every line is eligible.
+export function getRandomHistoricalContext(era, year) {
+    const lines = (era.historicalContext || []).filter(line => {
+        if (typeof line === 'string' || year === undefined) return true;
+        return (line.from === undefined || year >= line.from) && (line.to === undefined || year <= line.to);
+    });
+    if (lines.length === 0) {
         return 'the world continues turning';
     }
-    return era.historicalContext[Math.floor(Math.random() * era.historicalContext.length)];
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    return typeof line === 'string' ? line : line.text;
 }
 
 // Get a random technology for an era

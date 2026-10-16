@@ -242,8 +242,7 @@ function bindEvents(onClose) {
     });
     
     document.getElementById('debug-add-karma')?.addEventListener('click', () => {
-        currentKarma += 50;
-        addFn(50);
+        currentKarma = addFn(50);
         updateKarmaDisplayLocal(currentKarma, 50);
         updateButtonStates();
     });
@@ -254,8 +253,10 @@ async function handlePull() {
     updateButtonStates();
     
     // Deduct karma immediately for feel
-    currentKarma -= getPullCost();
-    spendFn(getPullCost());
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(getPullCost());
+    if (spent === false) { isAnimating = false; updateButtonStates(); return; }
+    currentKarma = spent;
     updateKarmaDisplayLocal(currentKarma, -getPullCost());
     
     // Determine result first so we can rig the reels
@@ -268,8 +269,7 @@ async function handlePull() {
         // Apply reward (might give karma back)
         const karmaGain = result.reward.type === 'karma' ? result.reward.value : 0;
         if (karmaGain > 0) {
-            currentKarma += karmaGain;
-            addFn(karmaGain);
+            currentKarma = addFn(karmaGain);
             updateKarmaDisplayLocal(currentKarma, karmaGain);
         }
     }
@@ -282,8 +282,10 @@ async function handleMultiPull() {
     isAnimating = true;
     updateButtonStates();
     
-    currentKarma -= getMultiPullCost();
-    spendFn(getMultiPullCost());
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(getMultiPullCost());
+    if (spent === false) { isAnimating = false; updateButtonStates(); return; }
+    currentKarma = spent;
     updateKarmaDisplayLocal(currentKarma, -getMultiPullCost());
     
     const result = doMultiPull(currentKarma + getMultiPullCost(), () => {});
@@ -502,8 +504,7 @@ async function showMultiPullResults(results) {
     
     // Apply total karma gain
     if (totalKarmaGain > 0) {
-        currentKarma += totalKarmaGain;
-        addFn(totalKarmaGain);
+        currentKarma = addFn(totalKarmaGain);
         updateKarmaDisplayLocal(currentKarma, totalKarmaGain);
     }
     

@@ -366,8 +366,10 @@ async function handleDrop(dropX) {
     document.getElementById('plinko-result').classList.remove('show');
     
     // Spend karma
-    currentKarma -= getPlinkoCost();
-    spendFn(getPlinkoCost());
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(getPlinkoCost());
+    if (spent === false) { isDropping = false; updateButtonStates(); return; }
+    currentKarma = spent;
     updateKarmaLocal(currentKarma, -getPlinkoCost());
     
     // Reset visual states
@@ -519,8 +521,7 @@ async function handleLanding(slot, result) {
         
         // Apply winnings with dramatic reveal
         await sleep(800);
-        currentKarma += payout;
-        addFn(payout);
+        currentKarma = addFn(payout);
         updateKarmaLocal(currentKarma, payout);
         
         // Hold the celebration
@@ -547,8 +548,7 @@ async function handleLanding(slot, result) {
         showResult(mult, payout);
         
         await sleep(600);
-        currentKarma += payout;
-        addFn(payout);
+        currentKarma = addFn(payout);
         updateKarmaLocal(currentKarma, payout);
         
         await sleep(1500);
@@ -564,8 +564,7 @@ async function handleLanding(slot, result) {
         showResult(mult, payout);
         
         await sleep(500);
-        currentKarma += payout;
-        addFn(payout);
+        currentKarma = addFn(payout);
         updateKarmaLocal(currentKarma, payout);
         
         await sleep(1200);
@@ -579,8 +578,7 @@ async function handleLanding(slot, result) {
         showResult(mult, payout);
         
         await sleep(400);
-        currentKarma += payout;
-        addFn(payout);
+        currentKarma = addFn(payout);
         updateKarmaLocal(currentKarma, payout);
         
         await sleep(1000);
@@ -593,8 +591,7 @@ async function handleLanding(slot, result) {
         showResult(mult, payout);
         
         await sleep(300);
-        currentKarma += payout;
-        addFn(payout);
+        currentKarma = addFn(payout);
         updateKarmaLocal(currentKarma, payout);
         
         await sleep(800);
@@ -607,8 +604,7 @@ async function handleLanding(slot, result) {
         showResult(mult, payout);
         
         await sleep(300);
-        currentKarma += payout;
-        addFn(payout);
+        currentKarma = addFn(payout);
         updateKarmaLocal(currentKarma, payout);
         
         await sleep(800);

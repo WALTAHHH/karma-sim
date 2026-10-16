@@ -27,12 +27,28 @@ let debugPanelVisible = false;
 let debugCallbacks = {};
 let currentState = null;
 
+// Debug tools are only offered on a local dev server, or when the URL has ?debug=true.
+// Players on the deployed site never see the DBG button.
+export function isDebugAllowed() {
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.localhost');
+    const params = new URLSearchParams(window.location.search);
+    return isLocal || params.get('debug') === 'true';
+}
+
 export function initDebug() {
     const toggle = document.getElementById('debug-toggle');
     const panel = document.getElementById('debug-panel');
-    
+
     if (!toggle || !panel) return;
-    
+
+    if (!isDebugAllowed()) {
+        toggle.remove();
+        panel.remove();
+        return;
+    }
+    toggle.hidden = false;
+
     toggle.addEventListener('click', () => {
         debugPanelVisible = !debugPanelVisible;
         window.debugMode = debugPanelVisible; // Expose to other modules

@@ -7,6 +7,7 @@ import {
     connectionsByWealth,
     weightedRandom,
     getWealthDescriptor,
+    withArticle,
     // Family generation functions
     getParentOccupation,
     getFamilyStructure,
@@ -280,7 +281,7 @@ export function createLegacyData(parentLife = null, karma = 0) {
     if (parentLife.job) {
         ancestorMemories.push({
             type: 'occupation',
-            content: `Your ${parentLife.family?.structure === 'single_parent' ? 'parent' : 'father'} worked as a ${parentLife.job.title}.`
+            content: `Your ${parentLife.family?.structure === 'single_parent' ? 'parent' : 'father'} worked as ${withArticle(parentLife.job.name.toLowerCase())}.`
         });
     }
     if (parentLife.wealth >= 5) {
@@ -619,20 +620,25 @@ function getSiblingPhrase(count, birthOrder) {
 
 // Family structure phrases
 function getFamilyPhrase(structure, parentOccupation, wealthDescriptor) {
+    // "unemployed" is in the occupation lists but isn't a job title
+    const outOfWork = parentOccupation === 'unemployed';
+    const fatherWork = outOfWork ? 'is out of work' : `works as ${withArticle(parentOccupation)}`;
     switch (structure) {
         case 'nuclear':
             if (parentOccupation) {
-                return `Your father works as a ${parentOccupation}, and your mother tends the home.`;
+                return `Your father ${fatherWork}, and your mother tends the home.`;
             }
-            return `You are raised by both parents in a ${wealthDescriptor} household.`;
+            return `You are raised by both parents; the family is ${wealthDescriptor}.`;
         case 'extended':
             if (parentOccupation) {
-                return `Your father works as a ${parentOccupation}, and grandparents help raise you.`;
+                return `Your father ${fatherWork}, and grandparents help raise you.`;
             }
             return `You grow up in an extended household with grandparents and relatives.`;
         case 'single_parent':
             if (parentOccupation) {
-                return `Your mother raises you alone, working as a ${parentOccupation}.`;
+                return outOfWork
+                    ? `Your mother raises you alone, without steady work.`
+                    : `Your mother raises you alone, working as ${withArticle(parentOccupation)}.`;
             }
             return `You are raised by a single parent who does their best.`;
         case 'orphaned':
@@ -667,7 +673,7 @@ export function getStartDescription(life) {
     // Get era context
     const era = life.era;
     const worldMood = era?.worldMood || 'a changing world';
-    const historicalContext = era ? getRandomHistoricalContext(era) : 'the world moves forward';
+    const historicalContext = era ? getRandomHistoricalContext(era, year) : 'the world moves forward';
 
     // Get country flavor
     const flavor = life.birthContext?.countryFlavor || { culturalNotes: 'a nation with its own character' };

@@ -261,8 +261,7 @@ async function handleDebugGrab(rarity) {
     
     // Apply reward
     applyReward(targetPrize.reward, (amount) => {
-        currentKarma += amount;
-        addFn(amount);
+        currentKarma = addFn(amount);
     });
     
     showResult(true, targetPrize.reward, rarity);
@@ -315,8 +314,10 @@ async function startGame() {
     if (currentKarma < getClawCost()) return;
     
     // Spend karma
-    currentKarma -= getClawCost();
-    spendFn(getClawCost());
+    // Spend through the shared karma store; stop if it refuses
+    const spent = spendFn(getClawCost());
+    if (spent === false) { return; }
+    currentKarma = spent;
     updateKarmaLocal(currentKarma, -getClawCost());
     
     // Hide result
@@ -378,8 +379,7 @@ async function handleWin(reward, rarity) {
     
     // Apply reward
     const effectMsg = applyReward(reward, (amount) => {
-        currentKarma += amount;
-        addFn(amount);
+        currentKarma = addFn(amount);
     });
     
     // Show result

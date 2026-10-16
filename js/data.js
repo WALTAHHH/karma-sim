@@ -77,6 +77,14 @@ export function weightedRandom(weights) {
     return weights.length;
 }
 
+// Prefix a noun phrase with "a" or "an" by its sound: "an engineer", "a union organizer", "an hour"
+export function withArticle(phrase) {
+    const text = String(phrase).trim();
+    if (/^(uni|use|usu|uti|eu|one\b|once\b)/i.test(text)) return `a ${text}`;
+    if (/^(hour|honest|honor|heir)/i.test(text)) return `an ${text}`;
+    return /^[aeiou]/i.test(text) ? `an ${text}` : `a ${text}`;
+}
+
 // Get random descriptor for a wealth level
 export function getWealthDescriptor(wealth) {
     const descriptors = wealthDescriptors[wealth];
